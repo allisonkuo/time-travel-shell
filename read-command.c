@@ -288,12 +288,12 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 		  break;
 
 		case ')':
-		  nested_subshell = false;
 		  nested_count--;
 
 		  // Break out of the outermost subshell once its closed
 		  if (nested_count == 0)
 		    {
+			  nested_subshell = false;
 		      count++;
 		      input++;
 		      break;
@@ -336,7 +336,7 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 	      subshell_counter++;
 	    }
 
-	  token *temp = make_token(SUBSHELL, subshell, subshell_line_num);
+	  token *temp = make_token(SUBSHELL);
 	  new_token->next = temp;
 	  new_token = new_token->next;
 	  break;
@@ -394,6 +394,8 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 	    }
 	  
     }
+	
+	return *head_stream;
   
 }
 
