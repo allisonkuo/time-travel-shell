@@ -58,7 +58,7 @@ token* make_token(enum token_type type, char *info)
   // Allocate space for this token
   token new_token = malloc(sizeof(token));
   if (new_token == NULL)
-    error(12, 0, "Error in allocating new memory."); // TODO figure out if this is right
+    error(2, 0, "Error in allocating new memory."); // TODO figure out if this is right
 
   new_token->type = type;
   new_token->info = info;
@@ -110,7 +110,7 @@ token_stream* convert_to_stream(char* input, size_t input_size)
   token_stream *new_stream = malloc(sizeof(token_stream));
   if (new_stream == NULL)
     {
-      error(12, 0, "Error in allocating new memory."); // TODO figure out if this is right
+      error(2, 0, "Error in allocating new memory."); // TODO figure out if this is right
       return NULL;
     }
   
@@ -357,7 +357,7 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 	      char *word = malloc(sizeof(word_size));
 	      if (word == NULL)
 		{
-		  error(12, 0, "Line %d: Error in allocating new memory.", line_num); 
+		  error(2, 0, "Line %d: Error in allocating new memory.", line_num); 
 		  return NULL;
 		}
 	      
@@ -373,7 +373,7 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 		      word = realloc(word, word_size * 2);
 		      if (word == NULL)
 			{
-			  error(12, 0, "Line %d: Error reallocating memory.", line_num);
+			  error(2, 0, "Line %d: Error reallocating memory.", line_num);
 			  return NULL;
 			}
 		    }
