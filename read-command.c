@@ -511,44 +511,33 @@ read_command_stream (command_stream_t s)
   return 0;
 }
 
-
-
-void outputEverything(token_stream* output)
+int main()
 {
-  //token and token_stream's next is NULL when it's the end
-  while(output->tail != NULL)
+  char stream[4] = "ac"; //DOES NOT WORK FOR DOUBLE NEWLINE
+  token_stream* output = convert_to_stream(stream, sizeof(stream));
+  int stream_num = 1;
+  while(1)
     {
+      printf("token_stream #%d\n", stream_num);
+      stream_num++;
       token* temp = output->head->next;
       while(temp != NULL)
 	{
-	  printf("token type: %d\n", (int)temp->type);
-	  //output whatever in this token
+	  int i;
+	  printf("%d\n",strlen(temp->info));
+	  printf("info: ");
+	  for(i = 0; i < strlen(temp->info); i++)
+	    {
+	      printf("%c", temp->info[i]);
+	    }
+	  printf("\n");
+	  printf("TYPE HERE\n\n");
 	  temp = temp->next;
 	}
+      if (output->tail == NULL)
+	break;
       output = output->tail;
     }
 }
-int main()
-{
-  char stream[2];
-  stream[0] = 'a';
-  stream[1] = 'b';
-  token_stream* final = convert_to_stream(stream, sizeof(stream));
-  int i,j;
-  outputEverything(final);
 
-  /*
-  for(j = 0; j < strlen(final->tail->head->next->info); j++)
-    {
-      printf("%c", (final->tail->head->next->info)[j]);
-      printf("\n");
-    }
-  */
-  
-}
-    
-/*NOTES
 
-first node of each token will be invalid
-*/
-OB
