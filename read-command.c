@@ -23,7 +23,7 @@
 // Define a "token" [nodes] and "token_stream" [linked list] to handle the input
 
 enum token_type {
-  AND,
+  AND=0,
   SEMICOLON,
   OR,
   PIPE,
@@ -441,7 +441,7 @@ void delete_all_token_streams(token_stream *stream)
   token_stream *temp = stream;
   while (temp != NULL)
     {
-      stream = stream->next;
+      stream = stream->tail;
       delete_token_stream(temp->head);
       free(temp);
       temp = stream;
@@ -449,6 +449,7 @@ void delete_all_token_streams(token_stream *stream)
 }
 
 
+/*
 // Implement a STACK and its basic functions to use later
 typedef struct stack stack;
 
@@ -487,33 +488,38 @@ command_t pop(stack *s, command_t c)
   s->num_items--;
   return s->commands[s->num_items];
 }
-
+*/
 
 /* FIXME: Define the type 'struct command_stream' here.  This should
    complete the incomplete type declaration in command.h.  */
 
-command_stream_t
-make_command_stream (int (*get_next_byte) (void *),
-		     void *get_next_byte_argument)
-{
+//command_stream_t
+//make_command_stream (int (*get_next_byte) (void *),
+//		     void *get_next_byte_argument)
+//{
   /* FIXME: Replace this with your implementation.  You may need to
      add auxiliary functions and otherwise modify the source code.
      You can also use external functions defined in the GNU C Library.  */
-  error (1, 0, "command reading not yet implemented");
-  return 0;
-}
+//  error (1, 0, "command reading not yet implemented");
+//  return 0;
+//}
 
-command_t
-read_command_stream (command_stream_t s)
-{
+//command_t
+//read_command_stream (command_stream_t s)
+//{
   /* FIXME: Replace this with your implementation too.  */
-  error (1, 0, "command reading not yet implemented");
-  return 0;
-}
+//  error (1, 0, "command reading not yet implemented");
+//  return 0;
+//}
+
+
 
 int main()
 {
-  char stream[4] = "ac"; //DOES NOT WORK FOR DOUBLE NEWLINE
+  char stream[3];
+  stream[0] = 'a';
+  stream[1] = ';';
+  stream[2] = 'b';
   token_stream* output = convert_to_stream(stream, sizeof(stream));
   int stream_num = 1;
   while(1)
@@ -524,14 +530,17 @@ int main()
       while(temp != NULL)
 	{
 	  int i;
-	  printf("%d\n",strlen(temp->info));
-	  printf("info: ");
-	  for(i = 0; i < strlen(temp->info); i++)
+	  if (temp->info != NULL)
 	    {
-	      printf("%c", temp->info[i]);
+	      //printf("%d\n",strlen(temp->info));
+	      printf("info: ");
+	      for(i = 0; i < strlen(temp->info); i++)
+		{
+		  printf("%c", temp->info[i]);
+		}
+	      printf("\n");
 	    }
-	  printf("\n");
-	  printf("TYPE HERE\n\n");
+	  printf("type: %d\n", (int)temp->type);
 	  temp = temp->next;
 	}
       if (output->tail == NULL)
