@@ -1,6 +1,5 @@
 // UCLA CS 111 Lab 1 command reading
 #include <stdio.h>
-
 #include <error.h>
 #include <stdbool.h>
 #include <ctype.h>
@@ -279,7 +278,7 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 	      // If subshell exists, need subshell_line_num for the error msg w/o messing up line_num
 	      int subshell_line_num = line_num;
 	      bool nested_subshell = true;
-	      int nested_count = 0;
+	      int nested_count = 1;
 	      
 	      while (nested_subshell == true)
 		{
@@ -311,8 +310,8 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 			    nested_subshell = false;
 			    count++;
 			    input++;
-			    break;
 			  }
+			break;
 		      }
 		      // Get rid of all the whitespace in the subshell
 		    case '\n':
@@ -327,15 +326,17 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 				break;
 			      }
 			    
-			    // Single \n = treat as semicolon in token info
 			    count++;
 			    input++;
 			  }
+			
+			// Single \n = treat as semicolon in token info
 			ch = ';';
 			line_num++;
 			subshell_line_num++;		      
 			break;
 		      }
+
 		    }
 		    
 		  // Reallocate more space for subshell if necessary
@@ -349,11 +350,15 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 			}
 		    }
 		  
+		  // Break out of the loop so doesn't store the final )
+		  if (!nested_subshell)
+		    break;
+		  
 		  subshell[subshell_counter] = ch;
 		  subshell_counter++;
 		}
 	      
-	      token *temp = make_token(SUBSHELL,NULL);
+	      token *temp = make_token(SUBSHELL, subshell);
 	      new_token->next = temp;
 	      new_token = new_token->next;
 	      break;
@@ -516,11 +521,8 @@ command_t pop(stack *s, command_t c)
 
 int main()
 {
-  char stream[3];
-  stream[0] = 'a';
-  stream[1] = ';';
-  stream[2] = 'b';
-  token_stream* output = convert_to_stream(stream, sizeof(stream));
+  char stream[100] = "((a&&b)||((c)|d)<(e)>d;e)";
+  token_stream* output = convert_to_stream(stream, strlen(stream));
   int stream_num = 1;
   while(1)
     {
