@@ -368,9 +368,9 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 	  default:
 	    {
 	      // WORD case
-	      if (is_valid_word(*input))//why did you have *script here?
+	      if (is_valid_word(*input))
 		{
-		  size_t word_size = sizeof(char);
+		  size_t word_size = sizeof(char) * 2;
 		  size_t word_counter = 0;
 		  
 		  // Need to remember word so allocate space for it
@@ -383,9 +383,9 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 
 		  
 		  // Loop through to get the whole word 
-		  while (count < input_size && is_valid_word(*input))//again, *script
+		  while (count < input_size && is_valid_word(*input))
 		    {
-		      word[word_counter] = *input; //again *script
+		      word[word_counter] = *input; 
 		      word_counter++;
 		      
 		      // Reallocate more space for word if necessary
@@ -402,7 +402,9 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 		      
 		      count++;
 		      input++;
+
 		    }
+		  
 		  token *temp = make_token(WORD, word);
 		  new_token->next = temp;
 		  new_token = new_token->next;
@@ -430,6 +432,7 @@ void outputEverything(token_stream* output)
       token* temp = output->head->next;
       while(temp != NULL)
 	{
+	  printf("token type: %d\n", (int)temp->type);
 	  //output whatever in this token
 	  temp = temp->next;
 	}
@@ -438,16 +441,21 @@ void outputEverything(token_stream* output)
 }
 int main()
 {
-  char stream[4] = "a\n\nb";
+  char stream[2];
+  stream[0] = 'a';
+  stream[1] = 'b';
   token_stream* final = convert_to_stream(stream, sizeof(stream));
   int i,j;
   outputEverything(final);
-  
-  /*  for(j = 0; j < strlen(final->tail->head->next->info); j++)
+
+  /*
+  for(j = 0; j < strlen(final->tail->head->next->info); j++)
     {
       printf("%c", (final->tail->head->next->info)[j]);
       printf("\n");
-      }*/
+    }
+  */
+  
 }
     
 /*NOTES
