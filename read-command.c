@@ -421,8 +421,97 @@ token_stream* convert_to_stream(char* input, size_t input_size)
     }
 	  
   return head_stream;
-  
 }
+
+// Deallocate the memory for a single token stream
+void delete_token_stream(token *head)
+{
+  token *temp = head;
+  while (temp != NULL)
+    {
+      head = head->next;
+      free(temp);
+      temp = head;
+    }
+}
+
+// Deallocate the memory for the entire token stream
+void delete_all_token_streams(token_stream *stream)
+{
+  token_stream *temp = stream;
+  while (temp != NULL)
+    {
+      stream = stream->next;
+      delete_token_stream(temp->head);
+      free(temp);
+      temp = stream;
+    }
+}
+
+
+// Implement a STACK and its basic functions to use later
+typedef struct stack stack;
+
+struct stack{
+  command_t commands[100];
+  int num_items;
+};
+
+int size(stack *s)
+{
+  return s->num_items;
+}
+
+bool empty(stack *s)
+{
+  if (s->num_items == 0)
+    return true;
+  return false;
+}
+
+command_t top(stack *s)
+{
+  top_spot = s->num_items - 1;
+  return s->commands[top_spot];
+}
+
+void push(stack *s, command_t c)
+{
+  s->commands[s->num_items] = c;
+  num_items++;
+}
+
+command_t pop(stack *s, command_t c)
+{
+  // After pushed, incremented size. To pop, must decrement size first
+  s->num_items--;
+  return s->commands[s->num_items];
+}
+
+
+/* FIXME: Define the type 'struct command_stream' here.  This should
+   complete the incomplete type declaration in command.h.  */
+
+command_stream_t
+make_command_stream (int (*get_next_byte) (void *),
+		     void *get_next_byte_argument)
+{
+  /* FIXME: Replace this with your implementation.  You may need to
+     add auxiliary functions and otherwise modify the source code.
+     You can also use external functions defined in the GNU C Library.  */
+  error (1, 0, "command reading not yet implemented");
+  return 0;
+}
+
+command_t
+read_command_stream (command_stream_t s)
+{
+  /* FIXME: Replace this with your implementation too.  */
+  error (1, 0, "command reading not yet implemented");
+  return 0;
+}
+
+
 
 void outputEverything(token_stream* output)
 {
@@ -462,3 +551,4 @@ int main()
 
 first node of each token will be invalid
 */
+OB
