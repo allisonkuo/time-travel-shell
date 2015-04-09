@@ -351,7 +351,8 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 		  // Reallocate more space for subshell if necessary
 		  if (subshell_counter == subshell_size)
 		    {
-		      subshell = realloc(subshell, subshell_size * 2);
+		      subshell_size *= 2;
+		      subshell = realloc(subshell, subshell_size);
 		      if (subshell == NULL)
 			{
 			  error(12, 0, "Line %d: Error reallocating memory.", line_num);
@@ -537,21 +538,15 @@ command_t make_command(token *t)
   else if (t->type == WORD)
     {
       new_command->type = SIMPLE_COMMAND;
-      new_command->u.word = malloc(sizeof(char) * 1000);
-      if (new_command->u.word == NULL)
-	{
-	  error(2, 0, "Error in allocating memory.");
-	  return NULL;
-	}
     }
   else if (t->type = SUBSHELL)
     {
       new_command->type = SUBSHELL_COMMAND;
-      new_command->u.word[0] = malloc(sizeof(t->info));
-      if (new_command->u.word[0] == NULL)
+      new_command->u.word = malloc(sizeof(t->info));
+      if (new_command->u.word == NULL)
 	{
-	  error(2, 0, "Error in allocating memory.");
-	  return NULL;
+	  error(2, 0, "Error in allocating new memory.");
+	  return NULL; 
 	}
       new_command->u.word[0] = t->info;
     }
@@ -613,10 +608,31 @@ command_t make_command_tree(token_stream *stream)
 	  command_t new_command = make_command(current_token);
 
 	  // If a simple command is multiple words, make it into one single command
+	  size_t temp_size = 20;
+	  size_t curr_size = 0;
+	  new_command->u.word = malloc(temp_size);
+	  if (new_command->u.word == NULL)
+	    {
+	      error(2, 0, "Error in allocating new memory.");
+	      return NULL;
+	    }
 	  while (current_token->type == WORD)
 	    {
+	      curr_size += sizeof(current_token->info);
+	      if (temp_size == curr_size)
+		{
+		  temp_size *= 2;
+		  new_command->u.word = realloc(new_command->u.word, temp_size);
+		  if (new_command->u.word == NULL)
+		    {
+		      error(2, 0, "Error in reallocating new memory.");
+		      return NULL;
+		    }
+		}
 	      new_command->u.word[count] = current_token->info;
 	      count++;
+	      if (current_token->next == NULL)
+		break;
 	      current_token = current_token->next;
 	    }
 
@@ -649,7 +665,8 @@ command_t make_command_tree(token_stream *stream)
 		  if (temp_count == temp_size)
 		    {
 		      // Also reallocate memory
-		      temp = realloc(temp, temp_size * 2);
+		      temp_size = temp_size * 2;
+		      temp = realloc(temp, temp_size);
 		      if (temp == NULL)
 			{
 			  error(2, 0, "Error in reallocating memory.");
@@ -689,7 +706,8 @@ command_t make_command_tree(token_stream *stream)
 		{
 		  if (temp_count == temp_size)
 		    {
-		      temp = realloc(temp, temp_size * 2);
+		      temp_size *= 2;
+		      temp = realloc(temp, temp_size);
 		      if (temp == NULL)
 			{
 			  error(2, 0, "Error in reallocating memory.");
@@ -764,7 +782,7 @@ command_t make_command_tree(token_stream *stream)
 
 int main()
 {
-  char stream[100] = "ls | grep";
+  char stream[100] = "a";
   token_stream* output = convert_to_stream(stream, strlen(stream));
   int stream_num = 1;
   while(1)
@@ -793,5 +811,5 @@ int main()
       output = output->tail;
     }
   command_t test = make_command_tree(output);
-  //   printf("test: %d\n", (int)test->type);
+   printf("test: %d\n", (int)test->type);
 }
