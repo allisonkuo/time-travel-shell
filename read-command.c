@@ -567,7 +567,7 @@ command_t combine_commands(command_t left, command_t op, command_t right)
 
 bool precedence(command_t a, command_t b)
 {
-  if (a->type == b->type)
+  if (a->type == b->type || (a->type == OR_COMMAND && b->type == AND_COMMAND) || (a->type == AND_COMMAND && b->type == OR_COMMAND))
     return true;
   else if (a->type == PIPE_COMMAND)
     return false;
@@ -583,6 +583,7 @@ bool precedence(command_t a, command_t b)
 command_t make_command_tree(token_stream *stream)
 {
   int count = 0;
+  int num_words = 0;
   token *current_token = stream->head->next;
 
   stack *operators = malloc(sizeof(stack));
@@ -618,6 +619,7 @@ command_t make_command_tree(token_stream *stream)
 	    }
 	  while (current_token->type == WORD)
 	    {
+	      num_words++;
 	      curr_size += sizeof(current_token->info);
 	      if (temp_size == curr_size)
 		{
@@ -633,18 +635,18 @@ command_t make_command_tree(token_stream *stream)
 	      count++;
 	      if (current_token->next == NULL)
 		break;
-	      current_token = current_token->next;
+	      if (current_token->next->type == WORD)
+		current_token = current_token->next;
+	      else
+		break;
 	    }
 
 	  push(operands, new_command);
 	}
       else if (current_token->type == INPUT)
 	{
-	  count = 0;
 	  command_t top = pop(operands);
 	  command_t next = make_command(current_token->next);
-
-	  push(operands, top);
 
 	  /* Find the energy of an array and xenophilo chemicals that
 	     becomes a nonray formally known as a laser beam */
@@ -657,7 +659,8 @@ command_t make_command_tree(token_stream *stream)
 	      error(2, 0, "Error in allocating new memory.");
 	      return NULL;
 	    }
-	  for (i = 0; i < count; i++)
+
+	  for (i = 0; i < num_words; i++)
 	    {
 	      int j = 0;
 	      while (next->u.word[i][j] != '\0')
@@ -680,6 +683,8 @@ command_t make_command_tree(token_stream *stream)
 	    }
 
 	  top->input = temp;
+	  push(operands, top);
+	  
 	  // Already worked with next token
 	  current_token = current_token->next;
 	}
@@ -687,8 +692,6 @@ command_t make_command_tree(token_stream *stream)
 	{
 	  command_t top = pop(operands);
 	  command_t next = make_command(current_token->next);
-
-	  push(operands, top);
 
 	  int i, j;
 	  size_t temp_count = 0;
@@ -699,7 +702,7 @@ command_t make_command_tree(token_stream *stream)
 	      error(2, 0, "Error in allocating new memory.");
 	      return NULL;
 	    }
-	  for (i = 0; i < count; i++)
+	  for (i = 0; i < num_words; i++)
 	    {
 	      int j = 0;
 	      while (next->u.word[i][j] != '\0')
@@ -720,6 +723,8 @@ command_t make_command_tree(token_stream *stream)
 	    }
 
 	  top->output = temp;
+	  push(operands, top);
+	  
 	  current_token = current_token->next;
 	}
       else
@@ -730,7 +735,7 @@ command_t make_command_tree(token_stream *stream)
 	  // Pop all operators w/ >= precedence and combine into new commands
 	  else
 	    {
-	      while (precedence(new_command, top(operators)))
+	      while (!empty(operators) && precedence(new_command, top(operators)))
 		{
 		  command_t ops = pop(operators);
 		  command_t right = pop(operands);
@@ -742,13 +747,25 @@ command_t make_command_tree(token_stream *stream)
 		}
 	      push(operators, new_command);
 	    }
-	    
 	}
       if (current_token->next == NULL)
 	break;
-	
+      
       current_token = current_token->next;
     }
+
+  // If have remaining operators after doing all the precedence stuff
+  while (!empty(operators))
+    {
+      command_t ops = pop(operators);
+      command_t right = pop(operands);
+      command_t left = pop(operands);
+
+      command_t current_command = combine_commands(left, ops, right);
+
+      push(operands,current_command);
+    }
+
   // Last thing on operand stack should be the top of the command tree
   command_t final = pop(operands);
   return final;
@@ -782,7 +799,7 @@ command_t make_command_tree(token_stream *stream)
 
 int main()
 {
-  char stream[100] = "a";
+  char stream[100] = "e < f";
   token_stream* output = convert_to_stream(stream, strlen(stream));
   int stream_num = 1;
   while(1)
@@ -811,5 +828,8 @@ int main()
       output = output->tail;
     }
   command_t test = make_command_tree(output);
-   printf("test: %d\n", (int)test->type);
+  printf("test: %d\n", (int)test->type);
+  //  int i;
+  //for (i = 0; i < strlen(test->input); i++)
+  //  printf("%c", test->input[i]);
 }
