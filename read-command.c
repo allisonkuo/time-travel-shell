@@ -1,6 +1,10 @@
 // UCLA CS 111 Lab 1 command reading
+#include "command.h"
+#include "command-internals.h"
+
 #include <stdio.h>
 #include <error.h>
+
 #include <stdbool.h>
 #include <ctype.h>
 #include <stdlib.h>
@@ -107,7 +111,7 @@ token_stream* convert_to_stream(char* input, size_t input_size)
   token_stream *new_stream = malloc(sizeof(token_stream));
   if (new_stream == NULL)
     {
-      error(2, 0, "Error in allocating new memory."); // TODO figure out if this is right
+      error(2, 0, "Error in allocating new memory."); 
       return NULL;
     } 
   
@@ -274,6 +278,11 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 	      
 	      // Need to remember subshell so allocate space for it
 	      char *subshell = malloc(sizeof(subshell_size));
+	      if (subshell == NULL)
+		{
+		  error(2, 0, "Error in allocating new memory.");
+		  return NULL;
+		}
 	      
 	      // If subshell exists, need subshell_line_num for the error msg w/o messing up line_num
 	      int subshell_line_num = line_num;
@@ -453,8 +462,6 @@ void delete_all_token_streams(token_stream *stream)
     }
 }
 
-
-/*
 // Implement a STACK and its basic functions to use later
 typedef struct stack stack;
 
@@ -477,23 +484,213 @@ bool empty(stack *s)
 
 command_t top(stack *s)
 {
-  top_spot = s->num_items - 1;
+  int top_spot = s->num_items - 1;
   return s->commands[top_spot];
 }
 
 void push(stack *s, command_t c)
 {
   s->commands[s->num_items] = c;
-  num_items++;
+  s->num_items++;
 }
 
-command_t pop(stack *s, command_t c)
+command_t pop(stack *s)
 {
   // After pushed, incremented size. To pop, must decrement size first
   s->num_items--;
   return s->commands[s->num_items];
 }
-*/
+
+// Turn word token into a command
+command_t make_command(token *t)
+{
+  command_t new_command = malloc(sizeof(command_t));
+  if (new_command == NULL)
+    {
+      error(2, 0, "Error in allocating new memory.");
+      return NULL;
+    }
+
+  // Same for all types of commands (for now). Will fix for operator in later function.
+  new_command->status = -1;
+  new_command->input = NULL;
+  new_command->output = NULL;
+  new_command->u.word = NULL;
+
+  // Different command_types for the different tokens
+  if (t->type == AND)
+    {
+      new_command->type = AND_COMMAND;
+    }
+  else if (t->type == SEMICOLON)
+    {
+      new_command->type = SEQUENCE_COMMAND;
+    }
+  else if (t->type == OR)
+    {
+      new_command->type = OR_COMMAND;
+    }
+  else if (t->type == PIPE)
+    {
+      new_command->type = PIPE_COMMAND;
+    }
+  else if (t->type == WORD)
+    {
+      new_command->type = SIMPLE_COMMAND;
+    }
+  else if (t->type = SUBSHELL)
+    {
+      new_command->type = SUBSHELL_COMMAND;
+      new_command->u.word[0] = t->info;
+    }
+
+  //  new_command->u.command[0] = NULL;
+
+  return new_command;
+}
+
+// Combine commands when involving operator into a "single" command
+command_t combine_commands(command_t left, command_t op, command_t right)
+{
+  op->u.command[0] = left;
+  op->u.command[1] = right;
+  
+  return op;
+}
+
+bool precedence(command_t a, command_t b)
+{
+  if (a->type == b->type)
+    return true;
+  else if (a->type == PIPE_COMMAND)
+    return false;
+  else if (b->type == PIPE_COMMAND)
+    return true;
+  else if (a->type == SEQUENCE_COMMAND)
+    return true;
+  else
+    return false;
+}
+
+// Makes a tree for the head of a token stream (b/c stream corresponds to tree)
+command_t make_command_tree(token_stream *stream)
+{
+  int count = 0;
+  token *current_token = stream->head->next;
+
+  stack *operators = malloc(sizeof(stack));
+  stack *operands = malloc(sizeof(stack));
+  if (operators == NULL || operands == NULL)
+    {
+      error(2, 0, "Error in allocating new memory.");
+      return NULL;
+    }
+
+  while (1)
+    {
+      
+      if (current_token->type == WORD || current_token->type == SUBSHELL)
+	{
+	  command_t new_command = make_command(current_token);
+
+	  // If a simple command is multiple words, make it into one single command
+	  while (current_token->type == WORD)
+	    {	  
+	      new_command->u.word[count] = current_token->info;
+	      count++;
+	      current_token = current_token->next;
+	    }
+
+	  push(operands, new_command);
+	}
+      else if (current_token->type == INPUT)
+	{
+	  command_t top = pop(operands);
+	  command_t next = make_command(current_token->next);
+
+	  push(operands, top);
+
+	  /* Find the energy of an array and xenophilo chemicals that
+	     becomes a nonray formally known as a laser beam */
+	  int i, j;
+	  char *temp = malloc(sizeof(char)*2);
+	  if (temp == NULL)
+	    {
+	      error(2, 0, "Error in allocating new memory.");
+	      return NULL;
+	    }
+	  for (i = 0; i < count; i++)
+	    {
+	      // Also reallocate memory
+	      
+	      int j = 0;
+	      while (j != '\0')
+		{
+		  temp[i] = next->u.word[i][j];
+		  j++;
+		}
+	    }
+
+	  top->input = temp;
+	  // Already worked with next token
+	  current_token = current_token->next;
+	}
+      else if (current_token->type == OUTPUT)
+	{
+	  command_t top = pop(operands);
+	  command_t next = make_command(current_token->next);
+
+	  push(operands, top);
+
+	  int i, j;
+	  char *temp = malloc(sizeof(char) * 2);
+	  if (temp == NULL)
+	    {
+	      error(2, 0, "Error in allocating new memory.");
+	      return NULL;
+	    }
+	  for (i = 0; i < count; i++)
+	    {
+	      int j = 0;
+	      while (j != '\0')
+		{
+		  temp[i] = next->u.word[i][j];
+		  j++;
+		}
+	    }
+
+	  top->output = temp;
+	  current_token = current_token->next;
+	}
+      else
+	{
+	  command_t new_command = make_command(current_token);
+	  if (empty(operators))
+	    push(operators, new_command);
+	  // Pop all operators w/ >= precedence and combine into new commands
+	  else
+	    {
+	      while (precedence(new_command, top(operators)))
+		{
+		  command_t ops = pop(operators);
+		  command_t right = pop(operands);
+		  command_t left = pop(operands);
+
+		  command_t current_command = combine_commands(left, ops, right);
+		  push(operands, current_command);
+		}
+	      push(operators, new_command);
+	    }
+	    
+	}
+      if (current_token->next == NULL)
+	break;
+
+      current_token = current_token->next;
+    }	 
+}
+
+
 
 /* FIXME: Define the type 'struct command_stream' here.  This should
    complete the incomplete type declaration in command.h.  */
@@ -521,7 +718,9 @@ command_t pop(stack *s, command_t c)
 
 int main()
 {
-  char stream[100] = "((a&&b)||((c)|d)<(e)>d;e)";
+  char stream[100];
+  printf("Input Stream: ");
+  fgets(stream, 100, stdin);
   token_stream* output = convert_to_stream(stream, strlen(stream));
   int stream_num = 1;
   while(1)
@@ -549,6 +748,7 @@ int main()
 	break;
       output = output->tail;
     }
-}
 
+  
+}
 
