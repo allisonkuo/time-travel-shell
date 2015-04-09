@@ -115,9 +115,10 @@ token_stream* convert_to_stream(char* input, size_t input_size)
       return NULL;
     } 
   
-  token_stream *head_stream = new_stream;
   new_stream->head = new_token; //head is first token
   new_stream->tail = NULL;
+  token_stream *head_stream = new_stream;
+  
   // Need line number for error message. 
   int line_num = 1;
   size_t count = 0;
@@ -218,7 +219,7 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 	case '\n':
 	  {
 	    line_num++;
-	  
+	    char *ch = input++;
 	    // Check current token-type
 	    // 2 cases if \n follows word or subshell:
 	    // a \n b -- treat \n as ;
@@ -227,9 +228,8 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 	    if (new_token->type == SUBSHELL || new_token->type == WORD)
 	      {
 	       // If 2 \n in a row, make a new command tree if current stream already used
-		if(*(input++) == '\n' && new_token->type != HEAD)
+		if(*ch == '\n' && new_token->type != HEAD)
 		  {
-		    
 		    new_stream->tail = malloc(sizeof(token_stream));
 		    new_stream = new_stream->tail;
 		    new_stream->tail = NULL;
@@ -537,10 +537,22 @@ command_t make_command(token *t)
   else if (t->type == WORD)
     {
       new_command->type = SIMPLE_COMMAND;
+      new_command->u.word = malloc(sizeof(char) * 1000);
+      if (new_command->u.word == NULL)
+	{
+	  error(2, 0, "Error in allocating memory.");
+	  return NULL;
+	}
     }
   else if (t->type = SUBSHELL)
     {
       new_command->type = SUBSHELL_COMMAND;
+      new_command->u.word[0] = malloc(sizeof(t->info));
+      if (new_command->u.word[0] == NULL)
+	{
+	  error(2, 0, "Error in allocating memory.");
+	  return NULL;
+	}
       new_command->u.word[0] = t->info;
     }
 
@@ -579,16 +591,22 @@ command_t make_command_tree(token_stream *stream)
   token *current_token = stream->head->next;
 
   stack *operators = malloc(sizeof(stack));
-  stack *operands = malloc(sizeof(stack));
-  if (operators == NULL || operands == NULL)
+  if(operators == NULL)
     {
       error(2, 0, "Error in allocating new memory.");
       return NULL;
     }
+  stack *operands = malloc(sizeof(stack));
+  if (operands == NULL)
+    {
+      error(2, 0, "Error in allocating new memory.");
+      return NULL;
+    }
+  operators->num_items = 0;
+  operands->num_items = 0;
 
   while (1)
     {
-      
       if (current_token->type == WORD || current_token->type == SUBSHELL)
 	{
 	  count = 0;
@@ -596,7 +614,7 @@ command_t make_command_tree(token_stream *stream)
 
 	  // If a simple command is multiple words, make it into one single command
 	  while (current_token->type == WORD)
-	    {	  
+	    {
 	      new_command->u.word[count] = current_token->info;
 	      count++;
 	      current_token = current_token->next;
@@ -701,6 +719,7 @@ command_t make_command_tree(token_stream *stream)
 		  command_t left = pop(operands);
 
 		  command_t current_command = combine_commands(left, ops, right);
+
 		  push(operands, current_command);
 		}
 	      push(operators, new_command);
@@ -709,7 +728,7 @@ command_t make_command_tree(token_stream *stream)
 	}
       if (current_token->next == NULL)
 	break;
-
+	
       current_token = current_token->next;
     }
   // Last thing on operand stack should be the top of the command tree
@@ -745,9 +764,7 @@ command_t make_command_tree(token_stream *stream)
 
 int main()
 {
-  char stream[100];
-  printf("Input Stream: ");
-  fgets(stream, 100, stdin);
+  char stream[100] = "ls | grep";
   token_stream* output = convert_to_stream(stream, strlen(stream));
   int stream_num = 1;
   while(1)
@@ -772,9 +789,9 @@ int main()
 	  temp = temp->next;
 	}
       if (output->tail == NULL)
-	break;
+      	break;
       output = output->tail;
     }
   command_t test = make_command_tree(output);
-   printf("test: %d\n", (int)test->type);
+  //   printf("test: %d\n", (int)test->type);
 }
