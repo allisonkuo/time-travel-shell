@@ -715,11 +715,15 @@ command_t make_command_tree(token_stream *stream)
 //}
 
 
-
+/*
 int main()
 {
   char stream[100];
+<<<<<<< HEAD
   printf("Input Stream: ");
+=======
+  printf("Input stream:");
+>>>>>>> 0fdafc34d4a00df9854616d6ad7d9dd0ce99e316
   fgets(stream, 100, stdin);
   token_stream* output = convert_to_stream(stream, strlen(stream));
   int stream_num = 1;
@@ -730,7 +734,7 @@ int main()
       token* temp = output->head->next;
       while(temp != NULL)
 	{
-	  int i;
+	  unsigned int i;
 	  if (temp->info != NULL)
 	    {
 	      //printf("%d\n",strlen(temp->info));
@@ -748,7 +752,11 @@ int main()
 	break;
       output = output->tail;
     }
+<<<<<<< HEAD
+=======
+    }*/
+//>>>>>>> 0fdafc34d4a00df9854616d6ad7d9dd0ce99e316
 
   
-}
+	//}
 
