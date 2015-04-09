@@ -591,6 +591,7 @@ command_t make_command_tree(token_stream *stream)
       
       if (current_token->type == WORD || current_token->type == SUBSHELL)
 	{
+	  count = 0;
 	  command_t new_command = make_command(current_token);
 
 	  // If a simple command is multiple words, make it into one single command
@@ -605,6 +606,7 @@ command_t make_command_tree(token_stream *stream)
 	}
       else if (current_token->type == INPUT)
 	{
+	  count = 0;
 	  command_t top = pop(operands);
 	  command_t next = make_command(current_token->next);
 
@@ -613,7 +615,9 @@ command_t make_command_tree(token_stream *stream)
 	  /* Find the energy of an array and xenophilo chemicals that
 	     becomes a nonray formally known as a laser beam */
 	  int i, j;
-	  char *temp = malloc(sizeof(char)*2);
+	  size_t temp_count = 0;
+	  size_t temp_size = 4;
+	  char *temp = malloc(temp_size);
 	  if (temp == NULL)
 	    {
 	      error(2, 0, "Error in allocating new memory.");
@@ -621,12 +625,21 @@ command_t make_command_tree(token_stream *stream)
 	    }
 	  for (i = 0; i < count; i++)
 	    {
-	      // Also reallocate memory
-	      
 	      int j = 0;
-	      while (j != '\0')
+	      while (next->u.word[i][j] != '\0')
 		{
+		  if (temp_count == temp_size)
+		    {
+		      // Also reallocate memory
+		      temp = realloc(temp, temp_size * 2);
+		      if (temp == NULL)
+			{
+			  error(2, 0, "Error in reallocating memory.");
+			  return NULL;
+			}
+		    }
 		  temp[i] = next->u.word[i][j];
+		  temp_count++;
 		  j++;
 		}
 	    }
@@ -643,7 +656,9 @@ command_t make_command_tree(token_stream *stream)
 	  push(operands, top);
 
 	  int i, j;
-	  char *temp = malloc(sizeof(char) * 2);
+	  size_t temp_count = 0;
+	  size_t temp_size = 4;
+	  char *temp = malloc(temp_size);
 	  if (temp == NULL)
 	    {
 	      error(2, 0, "Error in allocating new memory.");
@@ -652,8 +667,17 @@ command_t make_command_tree(token_stream *stream)
 	  for (i = 0; i < count; i++)
 	    {
 	      int j = 0;
-	      while (j != '\0')
+	      while (next->u.word[i][j] != '\0')
 		{
+		  if (temp_count == temp_size)
+		    {
+		      temp = realloc(temp, temp_size * 2);
+		      if (temp == NULL)
+			{
+			  error(2, 0, "Error in reallocating memory.");
+			  return NULL;
+			}
+		    }
 		  temp[i] = next->u.word[i][j];
 		  j++;
 		}
@@ -687,7 +711,10 @@ command_t make_command_tree(token_stream *stream)
 	break;
 
       current_token = current_token->next;
-    }	 
+    }
+  // Last thing on operand stack should be the top of the command tree
+  command_t final = pop(operands);
+  return final;
 }
 
 
@@ -715,15 +742,11 @@ command_t make_command_tree(token_stream *stream)
 //}
 
 
-/*
+
 int main()
 {
   char stream[100];
-<<<<<<< HEAD
   printf("Input Stream: ");
-=======
-  printf("Input stream:");
->>>>>>> 0fdafc34d4a00df9854616d6ad7d9dd0ce99e316
   fgets(stream, 100, stdin);
   token_stream* output = convert_to_stream(stream, strlen(stream));
   int stream_num = 1;
@@ -752,11 +775,6 @@ int main()
 	break;
       output = output->tail;
     }
-<<<<<<< HEAD
-=======
-    }*/
-//>>>>>>> 0fdafc34d4a00df9854616d6ad7d9dd0ce99e316
-
-  
-	//}
-
+  command_t test = make_command_tree(output);
+   printf("test: %d\n", (int)test->type);
+}
