@@ -106,6 +106,9 @@ bool is_valid_word(char letter)
 // note to self: size_t is for size of object
 token_stream* convert_to_stream(char* input, size_t input_size)
 {
+  int z;
+  for (z = 0; z < strlen(input); z++)
+    printf("input: %c\n", input[z]);
   // Allocate space for the token stream. Set head equal to a new token
   token *new_token = make_token(HEAD, NULL);
 
@@ -128,6 +131,9 @@ token_stream* convert_to_stream(char* input, size_t input_size)
   //*********** HAVE TO CHECK REDIRECTS???? **********
   while (count < input_size)
     {
+      //      printf("count: %d\n", (int)count);
+      //      printf("%d\n", (int)input_size);
+      //      printf("%c\n\n", *input);
       switch(*input)
 	{
 	  // < redirect case
@@ -235,7 +241,11 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 		    new_stream = new_stream->tail;
 		    new_stream->tail = NULL;
 		    new_token = make_token(HEAD, NULL);
-		    new_stream->head = new_token;		  
+		    new_stream->head = new_token;
+
+		    count++;
+		    input++;
+		    break;
 		  }
 		// Only a single \n, treat as a semicolon
 		else
@@ -258,7 +268,7 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 	      {
 		line_num++;
 		count++;
-		input++;
+		//input++;
 		break;
 	      }
 	    
@@ -280,6 +290,7 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 		    input++;
 		  }
 		line_num++;
+		count++;
 		input++;
 		break;
 	      }
@@ -424,6 +435,7 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 			  word = realloc(word, word_size);
 			  if (word == NULL)
 			    {
+
 			      error(2, 0, "Line %d: Error reallocating memory.", line_num);
 			      return NULL;
 			    }
@@ -850,8 +862,11 @@ make_command_stream (int (*get_next_byte) (void *),
     }
 
   // Process the buffer (script) into token stream
+  int k;
+  for (k = 0; k < strlen(buffer); k++)
+    printf("buffer: %c\n", buffer[k]);
   token_stream *temp = convert_to_stream(buffer, count);
-
+  
   // Initialize a command node 
   command_node *first = malloc(sizeof(command_node));
   if (first == NULL)
