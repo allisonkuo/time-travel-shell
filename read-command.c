@@ -670,16 +670,14 @@ command_t make_command_tree(token_stream *stream)
 	      new_command->u.word[count] = current_token->info;
 	      count++;
 	      if (current_token->next == NULL)
-		{
-		  new_command->u.word[count] = NULL;
 		  break;
-		}
 	      else if (current_token->next->type == WORD)
 		current_token = current_token->next;
 	      else
 		break;
 	    }
-	  
+	  new_command->u.word[count] = NULL;
+
 	  push(operands, new_command);
 	}
       else if (current_token->type == SUBSHELL)
@@ -733,16 +731,14 @@ command_t make_command_tree(token_stream *stream)
 	      count++;
 	      num_words++;
 	      if (current_token->next == NULL)
-		{
-		  nextone->u.word[count] == NULL;
 		  break;
-		}
-	      if (current_token->next->type == WORD)
+	      else if (current_token->next->type == WORD)
 		current_token->next = current_token->next->next;
 	      else
 		break;
 	    }
-	  
+	  nextone->u.word[count] == NULL;
+
 	  /* Find the energy of an array and xenophilo chemicals that
 	     becomes a nonray formally known as a laser beam */
 	  int i, j;
