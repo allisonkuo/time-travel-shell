@@ -1,1 +1,6 @@
-g++-cfoo.c
+# 1
+    cat</etc/passwd \
+  |
+    a c \
+  |
+    a

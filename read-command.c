@@ -670,7 +670,10 @@ command_t make_command_tree(token_stream *stream)
 	      new_command->u.word[count] = current_token->info;
 	      count++;
 	      if (current_token->next == NULL)
-		break;
+		{
+		  new_command->u.word[count] = NULL;
+		  break;
+		}
 	      else if (current_token->next->type == WORD)
 		current_token = current_token->next;
 	      else
@@ -730,9 +733,12 @@ command_t make_command_tree(token_stream *stream)
 	      count++;
 	      num_words++;
 	      if (current_token->next == NULL)
-		break;
+		{
+		  nextone->u.word[count] == NULL;
+		  break;
+		}
 	      if (current_token->next->type == WORD)
-		current_token = current_token->next;
+		current_token->next = current_token->next->next;
 	      else
 		break;
 	    }
@@ -742,8 +748,8 @@ command_t make_command_tree(token_stream *stream)
 	  int i, j;
 	  size_t temp_count = 0;
 	  size_t size = 10;
-	  char *temp = malloc(size);
-	  if (temp == NULL)
+	  char *temp2 = malloc(size);
+	  if (temp2 == NULL)
 	    {
 	      error(2, 0, "Error in allocating new memory.");
 	      return NULL;
@@ -758,25 +764,25 @@ command_t make_command_tree(token_stream *stream)
 		    {
 		      // Also reallocate memory
 		      size *= 2;
-		      temp = realloc(temp, size);
-		      if (temp == NULL)
+		      temp2 = realloc(temp2, size);
+		      if (temp2 == NULL)
 			{
 			  error(2, 0, "Error in reallocating memory.");
 			  return NULL;
 			}
 		    }
-		  temp[temp_count] = nextone->u.word[i][j];
+		  temp2[temp_count] = nextone->u.word[i][j];
 		  temp_count++;
 		  j++;
-		  break;
 		}
 	    }
-	  if (inputtype == 1)
-	    top->input = temp;
-	  else
-	    top->output = temp;
-	  push(operands, top);
 	  
+	  if (inputtype == 1)
+	    top->input = temp2;
+	  else
+	    top->output = temp2;
+
+	  push(operands, top);
 	}
       else
 	{
