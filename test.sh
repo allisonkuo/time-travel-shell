@@ -1,4 +1,3 @@
 #! /bin/sh
 
-true
-
+g++ -c foo.c

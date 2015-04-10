@@ -53,6 +53,7 @@ main (int argc, char **argv)
 
   command_t last_command = NULL;
   command_t command;
+  
   while ((command = read_command_stream (command_stream)))
     {
       if (print_tree)
@@ -63,7 +64,7 @@ main (int argc, char **argv)
       else
 	{
 	  last_command = command;
-	  //	  execute_command (command, time_travel);
+      	  execute_command (command, time_travel);
 	}
     }
 

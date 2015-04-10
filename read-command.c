@@ -101,9 +101,9 @@ bool is_valid_word(char letter)
   return false;
 }
 
-bool all_new_lines(char* input)
+bool all_newlines(char* input)
 {
-  int i;
+  unsigned int i;
   for(i = 0; i < strlen(input); i++)
     {
       if(*input != '\n')
@@ -118,8 +118,6 @@ bool all_new_lines(char* input)
 // note to self: size_t is for size of object
 token_stream* convert_to_stream(char* input, size_t input_size)
 {
-  //input_size = 16;
-  int z;
   // Allocate space for the token stream. Set head equal to a new token
   token *new_token = make_token(HEAD, NULL);
 
@@ -142,7 +140,7 @@ token_stream* convert_to_stream(char* input, size_t input_size)
   //*********** HAVE TO CHECK REDIRECTS???? **********
   while (count < input_size)
     {
-      if (all_new_lines(input))
+      if (all_newlines(input))
 	break;
       //printf("%d\n", count);
       switch(*input)
@@ -642,7 +640,7 @@ command_t make_command_tree(token_stream *stream)
 
   while (1)
     {
-      if (current_token->type == WORD || current_token->type == SUBSHELL)
+      if (current_token->type == WORD)
 	{
 	  count = 0;
 	  command_t new_command = make_command(current_token);
@@ -673,12 +671,21 @@ command_t make_command_tree(token_stream *stream)
 	      count++;
 	      if (current_token->next == NULL)
 		break;
-	      if (current_token->next->type == WORD)
+	      else if (current_token->next->type == WORD)
 		current_token = current_token->next;
 	      else
 		break;
 	    }
 	  
+	  push(operands, new_command);
+	}
+      else if (current_token->type == SUBSHELL)
+	{
+	  command_t new_command = make_command(current_token);
+
+	  // Process the subshell command tree and push onto the operands stack
+	  new_command->u.subshell_command = make_command_tree(convert_to_stream(current_token->info, strlen(current_token->info)));
+
 	  push(operands, new_command);
 	}
       else if (current_token->type == INPUT || current_token->type == OUTPUT)
@@ -873,7 +880,6 @@ make_command_stream (int (*get_next_byte) (void *),
     }
 
   // Process the buffer (script) into token stream
-  int k;
   token_stream *temp = convert_to_stream(buffer, count);
   
   // Initialize a command node 
@@ -896,6 +902,7 @@ make_command_stream (int (*get_next_byte) (void *),
   command_stream->head = first;
   command_stream->tail = first;
   command_stream->cursor = first;
+
   temp = temp->tail;      
   
   while (1)
@@ -916,7 +923,6 @@ make_command_stream (int (*get_next_byte) (void *),
 	  first = first->next;
 	  command_stream->tail = first;
 	}
-      
       temp = temp->tail;           
     }
 
@@ -927,10 +933,9 @@ command_t
 read_command_stream (command_stream_t s)
 {
   /* FIXME: Replace this with your implementation too.  */
-  if (s->cursor == NULL)
+   if (s->cursor == NULL)
     return NULL;
-  command_node *temp = s->cursor;
-  s->cursor = s->cursor->next;
-  return temp->command;
+   command_node *temp = s->cursor;
+   s->cursor = s->cursor->next;
+   return temp->command;
 }
-
