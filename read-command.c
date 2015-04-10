@@ -9,7 +9,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <limits.h>
 /* FIXME: You may need to add #include directives, macro definitions,
    static function definitions, etc.  
    
@@ -17,6 +17,7 @@
    included ctype.h to use isdigit() and isalpha()
    included stdlib.h to use for dealing with memory
    included string.h to use for string manipulation
+   included limits.h to use INT_MAX for input script
 
 */
 
@@ -269,7 +270,20 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 	      input++;
 	      break;
 	    }
-	  
+
+	    //COMMENT case. ignore until newline
+	    case '#':
+	      {
+		while(*input != '\n')
+		  {
+		    count++;
+		    input++;
+		  }
+		line_num++;
+		input++;
+		break;
+	      }
+	      
 	    // SUBSHELL case.  
 	  case '(':
 	    {
@@ -539,7 +553,7 @@ command_t make_command(token *t)
     {
       new_command->type = SIMPLE_COMMAND;
     }
-  else if (t->type = SUBSHELL)
+  else if (t->type == SUBSHELL)
     {
       new_command->type = SUBSHELL_COMMAND;
       new_command->u.word = malloc(sizeof(t->info));
@@ -565,6 +579,7 @@ command_t combine_commands(command_t left, command_t op, command_t right)
   return op;
 }
 
+
 bool precedence(command_t a, command_t b)
 {
   if (a->type == b->type || (a->type == OR_COMMAND && b->type == AND_COMMAND) || (a->type == AND_COMMAND && b->type == OR_COMMAND))
@@ -579,11 +594,12 @@ bool precedence(command_t a, command_t b)
     return false;
 }
 
+
 // Makes a tree for the head of a token stream (b/c stream corresponds to tree)
 command_t make_command_tree(token_stream *stream)
 {
   int count = 0;
-  int num_words = 0;
+  int num_words = 1;
   token *current_token = stream->head->next;
 
   stack *operators = malloc(sizeof(stack));
@@ -619,9 +635,8 @@ command_t make_command_tree(token_stream *stream)
 	    }
 	  while (current_token->type == WORD)
 	    {
-	      num_words++;
 	      curr_size += sizeof(current_token->info);
-	      if (temp_size == curr_size)
+	      if (temp_size <= curr_size)
 		{
 		  temp_size *= 2;
 		  new_command->u.word = realloc(new_command->u.word, temp_size);
@@ -640,20 +655,64 @@ command_t make_command_tree(token_stream *stream)
 	      else
 		break;
 	    }
-
+	  
 	  push(operands, new_command);
 	}
-      else if (current_token->type == INPUT)
+      else if (current_token->type == INPUT || current_token->type == OUTPUT)
 	{
-	  command_t top = pop(operands);
-	  command_t next = make_command(current_token->next);
+	  int inputtype; //1 if Input, 0 if Output
+	  if (current_token->type == INPUT)
+	    inputtype = 1;
+	  else
+	    inputtype = 0;
+	  count = 0;
+	  num_words = 0;
 
+	  command_t top = pop(operands);
+	  command_t nextone = make_command(current_token->next);
+
+	  current_token = current_token->next;
+	  
+	  // Do the same thing as if it were a word cuz everything sucks
+	  size_t temp_size = 20;
+	  size_t curr_size = 0;
+	  nextone->u.word = malloc(temp_size);
+	  if (nextone->u.word == NULL)
+	    {
+	      error(2, 0, "Error in allocating new memory.");
+	      return NULL;
+	    }
+
+	  while (current_token->type == WORD)
+	    {
+	      curr_size += sizeof(current_token->info);
+	      if (temp_size <= curr_size)//CHANGE EVERYWHERE
+		{
+		  temp_size *= 2;
+		  nextone->u.word = realloc(nextone->u.word, temp_size);
+		  if (nextone->u.word == NULL)
+		    {
+		      error(2, 0, "Error in reallocating new memory.");
+		      return NULL;
+		    }
+		}
+	      nextone->u.word[count] = current_token->info;
+	      count++;
+	      num_words++;
+	      if (current_token->next == NULL)
+		break;
+	      if (current_token->next->type == WORD)
+		current_token = current_token->next;
+	      else
+		break;
+	    }
+	  
 	  /* Find the energy of an array and xenophilo chemicals that
 	     becomes a nonray formally known as a laser beam */
 	  int i, j;
 	  size_t temp_count = 0;
-	  size_t temp_size = 4;
-	  char *temp = malloc(temp_size);
+	  size_t size = 10;
+	  char *temp = malloc(size);
 	  if (temp == NULL)
 	    {
 	      error(2, 0, "Error in allocating new memory.");
@@ -662,70 +721,32 @@ command_t make_command_tree(token_stream *stream)
 
 	  for (i = 0; i < num_words; i++)
 	    {
-	      int j = 0;
-	      while (next->u.word[i][j] != '\0')
+	      j = 0;
+	      while (nextone->u.word[i][j] != '\0')
 		{
-		  if (temp_count == temp_size)
+		  if (temp_count == size)
 		    {
 		      // Also reallocate memory
-		      temp_size = temp_size * 2;
-		      temp = realloc(temp, temp_size);
+		      size *= 2;
+		      temp = realloc(temp, size);
 		      if (temp == NULL)
 			{
 			  error(2, 0, "Error in reallocating memory.");
 			  return NULL;
 			}
 		    }
-		  temp[i] = next->u.word[i][j];
+		  temp[temp_count] = nextone->u.word[i][j];
 		  temp_count++;
 		  j++;
+		  break;
 		}
 	    }
-
-	  top->input = temp;
+	  if (inputtype == 1)
+	    top->input = temp;
+	  else
+	    top->output = temp;
 	  push(operands, top);
 	  
-	  // Already worked with next token
-	  current_token = current_token->next;
-	}
-      else if (current_token->type == OUTPUT)
-	{
-	  command_t top = pop(operands);
-	  command_t next = make_command(current_token->next);
-
-	  int i, j;
-	  size_t temp_count = 0;
-	  size_t temp_size = 4;
-	  char *temp = malloc(temp_size);
-	  if (temp == NULL)
-	    {
-	      error(2, 0, "Error in allocating new memory.");
-	      return NULL;
-	    }
-	  for (i = 0; i < num_words; i++)
-	    {
-	      int j = 0;
-	      while (next->u.word[i][j] != '\0')
-		{
-		  if (temp_count == temp_size)
-		    {
-		      temp_size *= 2;
-		      temp = realloc(temp, temp_size);
-		      if (temp == NULL)
-			{
-			  error(2, 0, "Error in reallocating memory.");
-			  return NULL;
-			}
-		    }
-		  temp[i] = next->u.word[i][j];
-		  j++;
-		}
-	    }
-
-	  top->output = temp;
-	  push(operands, top);
-	  
-	  current_token = current_token->next;
 	}
       else
 	{
@@ -772,34 +793,128 @@ command_t make_command_tree(token_stream *stream)
 }
 
 
-
 /* FIXME: Define the type 'struct command_stream' here.  This should
    complete the incomplete type declaration in command.h.  */
+typedef struct command_node command_node;
 
-//command_stream_t
-//make_command_stream (int (*get_next_byte) (void *),
-//		     void *get_next_byte_argument)
-//{
+struct command_node {
+  command_t command;
+  command_node *next;
+};
+
+struct command_stream {
+  command_node *head;
+  command_node *tail;
+  command_node *cursor;
+};
+
+command_stream_t
+make_command_stream (int (*get_next_byte) (void *),
+  void *get_next_byte_argument)
+{
   /* FIXME: Replace this with your implementation.  You may need to
      add auxiliary functions and otherwise modify the source code.
      You can also use external functions defined in the GNU C Library.  */
-//  error (1, 0, "command reading not yet implemented");
-//  return 0;
-//}
+  size_t count = 0;
+  size_t buffer_size = 512;
 
-//command_t
-//read_command_stream (command_stream_t s)
-//{
+  char ch = get_next_byte(get_next_byte_argument);
+  char *buffer = malloc(buffer_size);
+  if (buffer == NULL)
+    {
+      error(2, 0, "Error in allocating new memory.");
+      return NULL;
+    }
+
+  while (ch != -1 && ch != EOF)
+    {
+      buffer[count] = ch;
+      count++;
+      ch = get_next_byte(get_next_byte_argument);
+      
+      if (count == buffer_size)
+	{
+	  buffer_size *= 2;
+	  buffer = realloc(buffer, buffer_size);
+	  if (buffer == NULL)
+	    {
+	      error(2, 0, "Error in reallocating new memory.");
+	      return NULL;
+	    }
+	}
+      else if (count == INT_MAX)
+	{
+	  error(1, 0, "Line -1: Input size too large.");
+	  return NULL;
+	}
+    }
+
+  // Process the buffer (script) into token stream
+  token_stream *temp = convert_to_stream(buffer, count);
+
+  // Initialize a command node 
+  command_node *first = malloc(sizeof(command_node));
+  if (first == NULL)
+    {
+      error(2, 0, "Error in allocating new memory.");
+      return NULL;
+    }
+  first->command = make_command_tree(temp);
+  first->next = NULL;
+
+  // Initialize a command stream and point everything to the first node
+  command_stream_t command_stream = malloc(sizeof(command_stream_t));
+  if (command_stream == NULL)
+    {
+      error(2, 0, "Error in allocating new memory.");
+      return NULL;
+    }
+  command_stream->head = first;
+  command_stream->tail = first;
+  command_stream->cursor = first;
+  temp = temp->tail;      
+  
+  while (1)
+    {
+      if (temp == NULL)
+	break;
+      else
+	{
+	  command_node *next_node = malloc(sizeof(command_node));
+	    if (next_node == NULL)
+	      {
+	      error(2, 0, "Error in allocating new memory.");
+	      return NULL;
+	      }
+	  next_node->command = make_command_tree(temp);
+	  next_node->next = NULL;
+	  first->next = next_node;          	  
+	  first = first->next;
+	  command_stream->tail = first;
+	}
+      
+      temp = temp->tail;           
+    }
+
+  return command_stream;
+}
+
+command_t
+read_command_stream (command_stream_t s)
+{
   /* FIXME: Replace this with your implementation too.  */
-//  error (1, 0, "command reading not yet implemented");
-//  return 0;
-//}
+  if (s->cursor == NULL)
+    return NULL;
+  command_node *temp = s->cursor;
+  s->cursor = s->cursor->next;
+  return temp->command;
+}
 
 
-
+/*
 int main()
 {
-  char stream[100] = "e < f";
+  char stream[100] = "a;b&&c|d;(e)<f";
   token_stream* output = convert_to_stream(stream, strlen(stream));
   int stream_num = 1;
   while(1)
@@ -829,7 +944,6 @@ int main()
     }
   command_t test = make_command_tree(output);
   printf("test: %d\n", (int)test->type);
-  //  int i;
-  //for (i = 0; i < strlen(test->input); i++)
-  //  printf("%c", test->input[i]);
+
 }
+*/

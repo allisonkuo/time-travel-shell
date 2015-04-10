@@ -40,7 +40,7 @@ main (int argc, char **argv)
       }
  options_exhausted:;
 
-  // There must be exactly one file argument.
+ // There must be exactly one file argument.
   if (optind != argc - 1)
     usage ();
 
@@ -63,7 +63,7 @@ main (int argc, char **argv)
       else
 	{
 	  last_command = command;
-	  execute_command (command, time_travel);
+	  //	  execute_command (command, time_travel);
 	}
     }
 
