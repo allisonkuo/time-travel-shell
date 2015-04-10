@@ -101,14 +101,25 @@ bool is_valid_word(char letter)
   return false;
 }
 
-
+bool all_new_lines(char* input)
+{
+  int i;
+  for(i = 0; i < strlen(input); i++)
+    {
+      if(*input != '\n')
+	{
+	  return false;
+	}
+      input++;
+    }
+  return true;
+}
 // Convert the inputted script into token stream. HARD PART. FIGURE THIS OUT. glhf.
 // note to self: size_t is for size of object
 token_stream* convert_to_stream(char* input, size_t input_size)
 {
+  //input_size = 16;
   int z;
-  for (z = 0; z < strlen(input); z++)
-    printf("input: %c\n", input[z]);
   // Allocate space for the token stream. Set head equal to a new token
   token *new_token = make_token(HEAD, NULL);
 
@@ -131,9 +142,9 @@ token_stream* convert_to_stream(char* input, size_t input_size)
   //*********** HAVE TO CHECK REDIRECTS???? **********
   while (count < input_size)
     {
-      //      printf("count: %d\n", (int)count);
-      //      printf("%d\n", (int)input_size);
-      //      printf("%c\n\n", *input);
+      if (all_new_lines(input))
+	break;
+      //printf("%d\n", count);
       switch(*input)
 	{
 	  // < redirect case
@@ -226,7 +237,7 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 	case '\n':
 	  {
 	    line_num++;
-	    char *ch = input++;
+	    char *ch = input + 1;
 	    // Check current token-type
 	    // 2 cases if \n follows word or subshell:
 	    // a \n b -- treat \n as ;
@@ -243,8 +254,8 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 		    new_token = make_token(HEAD, NULL);
 		    new_stream->head = new_token;
 
-		    count++;
-		    input++;
+		    count += 2;
+		    input++; input++;
 		    break;
 		  }
 		// Only a single \n, treat as a semicolon
@@ -266,9 +277,9 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 	      }
 	    else
 	      {
-		line_num++;
+		//line_num++;
 		count++;
-		//input++;
+		input++;
 		break;
 	      }
 	    
@@ -863,8 +874,6 @@ make_command_stream (int (*get_next_byte) (void *),
 
   // Process the buffer (script) into token stream
   int k;
-  for (k = 0; k < strlen(buffer); k++)
-    printf("buffer: %c\n", buffer[k]);
   token_stream *temp = convert_to_stream(buffer, count);
   
   // Initialize a command node 
@@ -925,40 +934,3 @@ read_command_stream (command_stream_t s)
   return temp->command;
 }
 
-
-/*
-int main()
-{
-  char stream[100] = "a;b&&c|d;(e)<f";
-  token_stream* output = convert_to_stream(stream, strlen(stream));
-  int stream_num = 1;
-  while(1)
-    {
-      printf("token_stream #%d\n", stream_num);
-      stream_num++;
-      token* temp = output->head->next;
-      while(temp != NULL)
-	{
-	  unsigned int i;
-	  if (temp->info != NULL)
-	    {
-	      //printf("%d\n",strlen(temp->info));
-	      printf("info: ");
-	      for(i = 0; i < strlen(temp->info); i++)
-		{
-		  printf("%c", temp->info[i]);
-		}
-	      printf("\n");
-	    }
-	  printf("type: %d\n", (int)temp->type);
-	  temp = temp->next;
-	}
-      if (output->tail == NULL)
-      	break;
-      output = output->tail;
-    }
-  command_t test = make_command_tree(output);
-  printf("test: %d\n", (int)test->type);
-
-}
-*/
