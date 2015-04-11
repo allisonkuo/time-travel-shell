@@ -46,6 +46,7 @@ struct token {
   enum token_type type;
   char *info;
   token *next;
+  int line;
 };
 
 // *tail points to the next token stream and is "tail" of the first token_stream
@@ -151,6 +152,7 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 	    token *temp = make_token(INPUT, NULL);
 	    new_token->next = temp;
 	    new_token = new_token->next;
+	    new_token->line = line_num;
 	    
 	    count++;
 	    input++;
@@ -163,6 +165,7 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 	    token *temp = make_token(OUTPUT, NULL);
 	    new_token->next = temp;
 	    new_token = new_token->next;
+	    new_token->line = line_num;
 	    
 	    count++;
 	    input++;
@@ -175,6 +178,7 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 	    token *temp = make_token(SEMICOLON, NULL);
 	    new_token->next = temp;
 	    new_token = new_token->next;
+	    new_token->line = line_num;
 	    
 	    count++;
 	    input++;
@@ -192,6 +196,7 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 		token *temp = make_token(OR, NULL);
 		new_token->next = temp;
 		new_token = new_token->next;
+		new_token->line = line_num;
 		
 		count++;
 		input++;
@@ -203,6 +208,7 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 		token *temp = make_token(PIPE, NULL);
 		new_token->next = temp;
 		new_token = new_token->next;
+		new_token->line = line_num;
 		break;
 	      }
 	  }
@@ -218,6 +224,7 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 		token *temp = make_token(AND, NULL);
 		new_token->next = temp;
 		new_token = new_token->next;
+		new_token->line = line_num;
 		
 		count++;
 		input++;
@@ -252,6 +259,7 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 		    new_token = make_token(HEAD, NULL);
 		    new_stream->head = new_token;
 
+		    line_num++;
 		    count += 2;
 		    input++; input++;
 		    break;
@@ -262,7 +270,8 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 		    token *temp = make_token(SEMICOLON, NULL);
 		    new_token->next = temp;
 		    new_token = new_token->next;
-		    
+		    new_token->line = line_num;
+
 		    count++;
 		    input++;
 		    break;
@@ -275,7 +284,6 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 	      }
 	    else
 	      {
-		//line_num++;
 		count++;
 		input++;
 		break;
@@ -405,6 +413,7 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 	      token *temp = make_token(SUBSHELL, subshell);
 	      new_token->next = temp;
 	      new_token = new_token->next;
+	      new_token->line = line_num;
 	      break;
 	    }
 	  
@@ -458,6 +467,7 @@ token_stream* convert_to_stream(char* input, size_t input_size)
 		  token *temp = make_token(WORD, word);
 		  new_token->next = temp;
 		  new_token = new_token->next;
+		  new_token->line = line_num;
 		  break;
 		}
 	      else
@@ -534,7 +544,10 @@ command_t pop(stack *s)
 {
   // After pushed, incremented size. To pop, must decrement size first
   s->num_items--;
-  return s->commands[s->num_items];
+  if (s->num_items >= 0)
+    return s->commands[s->num_items];
+  else
+    return NULL;
 }
 
 // Turn word token into a command
@@ -592,8 +605,14 @@ command_t make_command(token *t)
 }
 
 // Combine commands when involving operator into a "single" command
-command_t combine_commands(command_t left, command_t op, command_t right)
+command_t combine_commands(command_t left, command_t op, command_t right, int line)
 {
+  if (left == NULL || right == NULL || op == NULL)
+    {
+      error(2, 0, "Line %d: Incorrect number of operands", line);
+      return NULL;
+    }
+  
   op->u.command[0] = left;
   op->u.command[1] = right;
   
@@ -638,6 +657,12 @@ command_t make_command_tree(token_stream *stream)
   operators->num_items = 0;
   operands->num_items = 0;
 
+  if (current_token->type != WORD && current_token->type != SUBSHELL)
+    {
+      error(2, 0, "Line %d: Invalid input", current_token->line);
+      return NULL;
+    }
+  
   while (1)
     {
       if (current_token->type == WORD)
@@ -691,6 +716,12 @@ command_t make_command_tree(token_stream *stream)
 	}
       else if (current_token->type == INPUT || current_token->type == OUTPUT)
 	{
+	  if (current_token->next == NULL || current_token->next->type != WORD) 
+	    {
+	      error(2, 0, "Line %d: Invalid token following redirection", current_token->line);
+	      return NULL;
+	    }
+	  
 	  int inputtype; //1 if Input, 0 if Output
 	  if (current_token->type == INPUT)
 	    inputtype = 1;
@@ -737,7 +768,7 @@ command_t make_command_tree(token_stream *stream)
 	      else
 		break;
 	    }
-	  nextone->u.word[count] == NULL;
+	  //	  nextone->u.word[count] == NULL;
 
 	  /* Find the energy of an array and xenophilo chemicals that
 	     becomes a nonray formally known as a laser beam */
@@ -793,8 +824,9 @@ command_t make_command_tree(token_stream *stream)
 		  command_t ops = pop(operators);
 		  command_t right = pop(operands);
 		  command_t left = pop(operands);
-
-		  command_t current_command = combine_commands(left, ops, right);
+		  int tokline = current_token->line;
+		  
+		  command_t current_command = combine_commands(left, ops, right, tokline);
 
 		  push(operands, current_command);
 		}
@@ -814,14 +846,14 @@ command_t make_command_tree(token_stream *stream)
       command_t right = pop(operands);
       command_t left = pop(operands);
 
-      command_t current_command = combine_commands(left, ops, right);
+      command_t current_command = combine_commands(left, ops, right, 1);
 
       push(operands,current_command);
     }
 
   // Last thing on operand stack should be the top of the command tree
   command_t final = pop(operands);
-  return final;
+   return final;
 }
 
 
@@ -928,6 +960,9 @@ make_command_stream (int (*get_next_byte) (void *),
       temp = temp->tail;           
     }
 
+  free(buffer);
+  delete_all_token_streams(temp);
+
   return command_stream;
 }
 
@@ -937,7 +972,7 @@ read_command_stream (command_stream_t s)
   /* FIXME: Replace this with your implementation too.  */
    if (s->cursor == NULL)
     return NULL;
-   command_node *temp = s->cursor;
+   command_t temp = s->cursor->command;
    s->cursor = s->cursor->next;
-   return temp->command;
+   return temp;
 }
