@@ -27,7 +27,7 @@
 // Define a "token" [nodes] and "token_stream" [linked list] to handle the input
 
 enum token_type {
-  AND=0,
+  AND,
   SEMICOLON,
   OR,
   PIPE,
