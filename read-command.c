@@ -599,7 +599,7 @@ command_t make_command(token *t)
       new_command->u.word[0] = t->info;
       }
 
-  //  new_command->u.command[0] = NULL;
+  new_command->u.command[0] = NULL;
 
   return new_command;
 }
