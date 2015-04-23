@@ -597,7 +597,7 @@ command_t make_command(token *t)
 	  return NULL; 
 	}
       new_command->u.word[0] = t->info;
-    }
+      }
 
   //  new_command->u.command[0] = NULL;
 
