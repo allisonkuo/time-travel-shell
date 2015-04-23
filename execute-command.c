@@ -35,11 +35,24 @@ void execute_simple (command_t c)
       if (dup2(fd, 1) < 0)
 	error(1, 0, "Error in dup2.");
     }
-      
+
+  if (c->input != NULL)
+    {
+      printf("hi");
+      int fd = open(c->input, O_CREAT | O_TRUNC | O_RDONLY, 0644);
+
+      if (fd < 0)
+	error(1, 0, "Error opening file.");
+
+      if (dup2(fd, 0) < 0)
+	error(1, 0, "Error in dup2.");
+    }
+  
   if (strcmp(a[0], exec) == 0)
     execvp(a[1], &a[1]);
   else
     execvp(a[0], a);
+
 }
 
 void execute_and (command_t c)
