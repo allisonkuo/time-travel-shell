@@ -20,6 +20,8 @@ command_status (command_t c)
   return c->status;
 }
 
+// for 1b, pass in true arbitrarily for bool time_travel argument of
+// execute_command because not using that variable yet.
 void execute_simple (command_t c)
 {
   char **a = c->u.word;
@@ -38,8 +40,7 @@ void execute_simple (command_t c)
 
   if (c->input != NULL)
     {
-      printf("hi");
-      int fd = open(c->input, O_CREAT | O_TRUNC | O_RDONLY, 0644);
+      int fd = open(c->input, O_RDONLY, 0644);
 
       if (fd < 0)
 	error(1, 0, "Error opening file.");
@@ -172,6 +173,17 @@ void execute_subshell (command_t c)
 	error(1, 0, "Error in dup2.");
     }
 
+    if (c->input != NULL)
+    {
+      int fd = open(c->input, O_RDONLY, 0644);
+
+      if (fd < 0)
+	error(1, 0, "Error opening file.");
+
+      if (dup2(fd, 0) < 0)
+	error(1, 0, "Error in dup2.");
+    }
+    
   execute_command(c->u.subshell_command, true);
 }
 

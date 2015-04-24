@@ -1,4 +1,4 @@
 #! /bin/sh
 
-cat < a.txt 
+cat < a.txt | sort && echo a
 
