@@ -60,17 +60,22 @@ void execute_and (command_t c)
 {
   pid_t p = fork();
   if (p == 0)
-    execute_command(c->u.command[0], true);
+    {
+      execute_command(c->u.command[0], true);
+      _exit(c->u.command[0]->status);
+    }
   else
     {
       int status;
-      int exit_status;
       
       waitpid(p, &status, 0);
-      exit_status = WEXITSTATUS(status);
+      c->status = WEXITSTATUS(status);
 
-      if (exit_status == 0)
-	execute_command(c->u.command[1], true);
+      if (c->status == 0)
+	{
+	  execute_command(c->u.command[1], true);
+	  _exit(c->u.command[1]->status);
+	}
     }
 }
 
@@ -78,17 +83,22 @@ void execute_or (command_t c)
 {
   pid_t p = fork();
   if (p == 0)
-    execute_command(c->u.command[0], true);
+    {
+      execute_command(c->u.command[0], true);
+      _exit(c->u.command[0]->status);
+    }
   else
     {
       int status;
-      int exit_status;
 
       waitpid(p, &status, 0);
-      exit_status = WEXITSTATUS(status);
+      c->status = WEXITSTATUS(status);
 
-      if (exit_status != 0)
-	execute_command(c->u.command[1], true);
+      if (c->status != 0)
+	{
+	  execute_command(c->u.command[1], true);
+	  _exit(c->u.command[1]->status);
+	}
     }
 }
 
@@ -96,14 +106,16 @@ void execute_sequence (command_t c)
 {
   pid_t p = fork();
   if (p == 0)
-    execute_command(c->u.command[0], true);
+    {
+      execute_command(c->u.command[0], true);
+      _exit(c->u.command[0]->status);
+    }
   else
     {
       int status;
       waitpid(p, &status, 0);
       execute_command(c->u.command[1], true);
-
-
+      _exit(c->u.command[1]->status);
     }
 }
 
@@ -126,7 +138,7 @@ void execute_pipe (command_t c)
 	error(1, 0, "Error in dup2");
 
       execute_command(c->u.command[1], true);
-      //_exit(c->u.command[1]->status);
+      _exit(c->u.command[1]->status);
     }
   else
     {
@@ -142,8 +154,8 @@ void execute_pipe (command_t c)
 	    error(1, 0, "Error in dup2");
 
 	  execute_command(c->u.command[0], true);
+	  _exit(c->u.command[0]->status);
 	}
-      //_exit(c->u.command[0]->status);
     }
 
   close(fd[0]);
@@ -152,7 +164,7 @@ void execute_pipe (command_t c)
   if (second_pid == return_pid)
     {
       waitpid(first_pid, &status, 0);
-      //exit_status = WEXITSTATUS(status);
+      c->status = WEXITSTATUS(status);
     }
   if (first_pid == return_pid)
     waitpid(second_pid, &status, 0);
