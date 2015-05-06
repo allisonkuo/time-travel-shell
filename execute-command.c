@@ -14,10 +14,23 @@
 /* FIXME: You may need to add #include directives, macro definitions,
    static function definitions, etc.  */
 
-// Implement a QUEUE
 typedef struct graph_node graph_node;
 typedef struct queue queue;
-typedef struct dependency_graph;
+typedef struct dependency_graph dependency_graph;
+typedef struct dependency_list dependency_list;
+typedef struct command_node command_node;
+
+struct command_node {
+  command_t command;
+  command_node *next;
+};
+
+struct command_stream {
+  command_node *head;
+  command_node *tail;
+  command_node *cursor;
+};
+
 
 struct graph_node {
   command_t command;
@@ -25,63 +38,121 @@ struct graph_node {
   pid_t pid;
 };
 
-
+// implement a QUEUE and its function
 struct queue {
-  graph_node graphs[100];
+  graph_node* graphs[100];
   int num_items;
   int current;
 };
 
-void push(queue *q, command_t c)
+void push(queue *q, graph_node* g)
 {
-  q->commands[s->num_items] = c;
+  q->graphs[q->num_items] = g;
   q->num_items++;
 }
 
-graph_node pop(queue *q)
+graph_node* pop(queue *q)
 {
-  if(s->num_items == s->current)
+  if(q->num_items == q->current)
     return NULL;
   else
     {
-      s->current++;
-      return s->graphs[s->current - 1];
+      q->current++;
+      return q->graphs[q->current - 1];
     }
 }
 
 struct dependency_graph {
-  queue no_dependencies;
-  queue dependencies;
+  queue* no_dependencies;
+  queue* dependencies;
 };
 
-void process_command(command_t c)
+
+struct dependency_list {
+  graph_node* g;
+  dependency_list* next;
+  char** read;
+  char** write;
+  int read_count;
+  int write_count;
+};
+
+// initialize a dependency list node
+dependency_list* create_dependency_node()
 {
+  dependency_list* d = malloc(sizeof(dependency_list));
+  d->read = malloc(sizeof(read));
+  d->write = malloc(sizeof(write));
+  if (d->read == NULL || d->write == NULL)
+    {
+      error(2, 0, "Error in allocating new memory.");
+      return NULL;
+    }
+
+  d->next = NULL;
+  d->read_count = 0;
+  d->write_count = 0;
+
+  return d;
+}
+
+void process_command(command_t c, dependency_list* d)
+{
+  // for each command,
   if (c->type == SIMPLE_COMMAND)
     {
       // store c->input, c->u.word[1] into read list(filter for options)
       // store output into write list
-      return NULL;
+      return;
     }
   else if (c-> type == SUBSHELL_COMMAND)
     {
       // store c->input into read list
       // store c->output into write list
       //process_command(c->u.subshell_command);
-      return NULL;
+      return;
     }
   else
     {
       //process_command(c->u.command[0]);
       //process_command(c->u.command[1]);
-      return NULL;
+      return;
     }
-  
-  
 }
-
-void create_graph(command_stream_t c)
+  
+dependency_graph* create_graph(command_stream_t c)
 {
-  process_command(c->command);
+  dependency_graph* dep = 
+  /*
+  dependency_list* head = create_dependency_node();
+  dependency_list* temp = head;
+  dependency_list* d = head;
+  while (c != NULL)
+    {
+      while (c->cursor != NULL)
+	{
+	  command_t cmd = c->cursor->command;
+	  process_command(cmd, d);
+	  c->cursor = c->cursor->next;
+	}
+      c = c->tail;
+
+      if (c != NULL)
+	{
+	  dependency_list* d = create_dependency_node();
+	  temp = d;
+	}
+
+      if (head->next == NULL)
+	head->next = temp;
+      else
+	{
+	  temp->next = d;
+	  temp = temp->next;
+	}
+    }
+  return head;
+  */
 }
 
 int
