@@ -14,6 +14,76 @@
 /* FIXME: You may need to add #include directives, macro definitions,
    static function definitions, etc.  */
 
+// Implement a QUEUE
+typedef struct graph_node graph_node;
+typedef struct queue queue;
+typedef struct dependency_graph;
+
+struct graph_node {
+  command_t command;
+  struct graph_node** before;
+  pid_t pid;
+};
+
+
+struct queue {
+  graph_node graphs[100];
+  int num_items;
+  int current;
+};
+
+void push(queue *q, command_t c)
+{
+  q->commands[s->num_items] = c;
+  q->num_items++;
+}
+
+graph_node pop(queue *q)
+{
+  if(s->num_items == s->current)
+    return NULL;
+  else
+    {
+      s->current++;
+      return s->graphs[s->current - 1];
+    }
+}
+
+struct dependency_graph {
+  queue no_dependencies;
+  queue dependencies;
+};
+
+void process_command(command_t c)
+{
+  if (c->type == SIMPLE_COMMAND)
+    {
+      // store c->input, c->u.word[1] into read list(filter for options)
+      // store output into write list
+      return NULL;
+    }
+  else if (c-> type == SUBSHELL_COMMAND)
+    {
+      // store c->input into read list
+      // store c->output into write list
+      //process_command(c->u.subshell_command);
+      return NULL;
+    }
+  else
+    {
+      //process_command(c->u.command[0]);
+      //process_command(c->u.command[1]);
+      return NULL;
+    }
+  
+  
+}
+
+void create_graph(command_stream_t c)
+{
+  process_command(c->command);
+}
+
 int
 command_status (command_t c)
 {

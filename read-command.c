@@ -511,7 +511,7 @@ void delete_all_token_streams(token_stream *stream)
 // Implement a STACK and its basic functions to use later
 typedef struct stack stack;
 
-struct stack{
+struct stack {
   command_t commands[100];
   int num_items;
 };
