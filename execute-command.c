@@ -17,18 +17,12 @@
 typedef struct graph_node graph_node;
 typedef struct queue queue;
 typedef struct dependency_graph dependency_graph;
-typedef struct dependency_list dependency_list;
+typedef struct building_list building_list;
 typedef struct command_node command_node;
 
 struct command_node {
   command_t command;
   command_node *next;
-};
-
-struct command_stream {
-  command_node *head;
-  command_node *tail;
-  command_node *cursor;
 };
 
 
@@ -38,7 +32,7 @@ struct graph_node {
   pid_t pid;
 };
 
-// implement a QUEUE and its function
+// ===============implement a QUEUE and its function=========
 struct queue {
   graph_node* graphs[100];
   int num_items;
@@ -61,26 +55,35 @@ graph_node* pop(queue *q)
       return q->graphs[q->current - 1];
     }
 }
+// ==================end of queue ====================
 
+
+// ==================dependency_graph ================
 struct dependency_graph {
   queue* no_dependencies;
   queue* dependencies;
 };
 
+// =================end of dependncy_graph ========
 
-struct dependency_list {
+
+// ========== building_list ===================
+
+struct building_list {
   graph_node* g;
-  dependency_list* next;
+  building_list* next;
   char** read;
   char** write;
   int read_count;
   int write_count;
 };
 
-// initialize a dependency list node
-dependency_list* create_dependency_node()
+// initialize a building list node
+building_list* create_building_list_node()
 {
-  dependency_list* d = malloc(sizeof(dependency_list));
+  building_list* d = malloc(sizeof(building_list));
+  d->graph_node = malloc(sizeof(graph_node));
+  d->graph_node->before = NULL;
   d->read = malloc(sizeof(read));
   d->write = malloc(sizeof(write));
   if (d->read == NULL || d->write == NULL)
@@ -88,15 +91,16 @@ dependency_list* create_dependency_node()
       error(2, 0, "Error in allocating new memory.");
       return NULL;
     }
-
   d->next = NULL;
   d->read_count = 0;
   d->write_count = 0;
-
   return d;
 }
 
-void process_command(command_t c, dependency_list* d)
+// ============end of building_list =================
+
+
+void process_command(command_t c, building_list* d)
 {
   // for each command,
   if (c->type == SIMPLE_COMMAND)
@@ -119,10 +123,42 @@ void process_command(command_t c, dependency_list* d)
       return;
     }
 }
-  
+
+
 dependency_graph* create_graph(command_stream_t c)
 {
-  dependency_graph* dep = 
+  dependency_graph* d = malloc(sizeof(dependency_graph));
+  building_list* head;
+  building_list* temp = head;
+
+  for ()//TODO: each command tree
+    {
+      temp->g->command = //TODO: top command
+      temp->next = create_building_list_node();
+      temp = temp->next;
+      for ()//TODO: each command in command tree
+	{
+	  process_command(c, temp); //TODO
+	}
+      building_list* iterator = head;
+      while ()
+	{
+	  if(check_dependency(temp, iterator)) //TODO: RAW, WAR, WAW
+	    {
+	      add_before(temp->g->before, iterator->g); //TODO
+	    }
+	  iterator = iterator->next;
+	  if (iterator->next == NULL)
+	    break;
+	}
+      if (temp->g->before != NULL)
+	push(d->dependencies, temp->g);
+      else
+	push(d->no_dependencies, temp->g);
+    }
+  return d;
+}
+
   /*
   dependency_list* head = create_dependency_node();
   dependency_list* temp = head;
@@ -154,6 +190,12 @@ dependency_graph* create_graph(command_stream_t c)
   return head;
   */
 }
+
+// ========================= END OF PART C=========================
+
+
+
+
 
 int
 command_status (command_t c)
