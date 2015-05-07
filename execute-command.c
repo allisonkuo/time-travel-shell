@@ -10,6 +10,7 @@
 #include <sys/wait.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <stdbool.h>
 
 /* FIXME: You may need to add #include directives, macro definitions,
    static function definitions, etc.  */
@@ -25,11 +26,17 @@ struct command_node {
   command_node *next;
 };
 
+struct command_stream {
+  command_node *head;
+  command_node *tail;
+  command_node *cursor;
+};
 
 struct graph_node {
   command_t command;
   struct graph_node** before;
   pid_t pid;
+  int count;
 };
 
 // ===============implement a QUEUE and its function=========
@@ -39,38 +46,48 @@ struct queue {
   int current;
 };
 
-void push(queue *q, graph_node* g)
+void qpush(queue *q, graph_node* g)
 {
   q->graphs[q->num_items] = g;
   q->num_items++;
 }
 
-graph_node* pop(queue *q)
+graph_node* qpop(queue *q)
 {
-  if(q->num_items == q->current)
+  if(q->num_items == 0)
     return NULL;
   else
     {
       q->current++;
+      g->num_items--;
       return q->graphs[q->current - 1];
     }
 }
-// ==================end of queue ====================
+
+bool qempty(queue *q)
+{
+  if (num_items == 0)
+    return true;
+  else
+    return false;
+}
+
+// ================== end of queue ====================
 
 
-// ==================dependency_graph ================
+// ================== dependency_graph ================
 struct dependency_graph {
   queue* no_dependencies;
   queue* dependencies;
 };
 
-// =================end of dependncy_graph ========
+// ============== end of dependency_graph ============
 
 
 // ========== building_list ===================
 
 struct building_list {
-  graph_node* g;
+  graph_node* gn;
   building_list* next;
   char** read;
   char** write;
@@ -82,22 +99,25 @@ struct building_list {
 building_list* create_building_list_node()
 {
   building_list* d = malloc(sizeof(building_list));
-  d->graph_node = malloc(sizeof(graph_node));
-  d->graph_node->before = NULL;
+
+  d->gn = malloc(sizeof(graph_node));
+  d->gn->before = NULL;
+  d->gn->count = 0;
   d->read = malloc(sizeof(read));
   d->write = malloc(sizeof(write));
-  if (d->read == NULL || d->write == NULL)
-    {
+  if (d->read == NULL || d->write == NULL || d == NULL || d->gn == NULL)
+  {
       error(2, 0, "Error in allocating new memory.");
       return NULL;
     }
+
   d->next = NULL;
   d->read_count = 0;
   d->write_count = 0;
   return d;
 }
 
-// ============end of building_list =================
+// ============ end of building_list =================
 
 
 void process_command(command_t c, building_list* d)
@@ -124,78 +144,126 @@ void process_command(command_t c, building_list* d)
     }
 }
 
+bool check_dependency(building_list* b1, building_list* b2)
+{
+  int i, j;
+
+  // if b1's read and b2's write intersects (WAR)
+  for (i = 0; i < b1->read_count; i++)
+    for (j = 0; j < b2->write_count; j++)
+      if (strcmp(b1->read[i], b2->write[j]))
+	return true;
+  
+  // if b1's write and b2's read intersects (RAW)
+  for (i = 0; i < b1->write_count; i++)
+    for (j = 0; j < b2->read_count; j++)
+      if (strcmp(b1->write[i], b2->read[j]))
+	return true;
+  
+  // if b1's write and b2's write intersects (WAW)
+  for (i = 0; i < b1->write_count; i++)
+    for (j = 0; j < b2->write_count; j++)
+      if (strcmp(b1->write[i], b2->write[j]))
+	return true;
+
+  return false;
+}
+
+void add_before(graph_node* g1, graph_node* g2)
+{
+  // CHECK LOL
+  g1->before = realloc(g1->before, sizeof(graph_node));
+  g1->before[g1->count] = g2;
+  count++;
+}
+
 
 dependency_graph* create_graph(command_stream_t c)
 {
+  // head = arbitrary dependency list node. ignore it.
   dependency_graph* d = malloc(sizeof(dependency_graph));
-  building_list* head;
+  d->dependencies = malloc(sizeof(queue));
+  d->no_dependencies = malloc(sizeof(queue));
+  if (d == NULL || d->dependencies == NULL || d->no_dependencies == NULL)
+    {
+      error(2, 0, "Error in allocating memory.");
+      return NULL;
+    }
+  
+  building_list* head = create_building_list_node();
   building_list* temp = head;
 
-  for ()//TODO: each command tree
+  // go through each command tree
+  while (c->head != NULL)
     {
-      temp->g->command = //TODO: top command
+      // top of each command tree
+      temp->gn->command = c->head->command; 
       temp->next = create_building_list_node();
       temp = temp->next;
-      for ()//TODO: each command in command tree
-	{
-	  process_command(c, temp); //TODO
-	}
+
+      // should process the whole command tree
+      process_command(c->head->command, temp); 
+
       building_list* iterator = head;
-      while ()
+      while (iterator->next != NULL)
 	{
-	  if(check_dependency(temp, iterator)) //TODO: RAW, WAR, WAW
-	    {
-	      add_before(temp->g->before, iterator->g); //TODO
-	    }
+	  // check if there are any read/write dependencies. if so, add to read/write list
+	  if(check_dependency(temp, iterator)) 
+	    add_before(temp->gn, iterator->gn); 
 	  iterator = iterator->next;
-	  if (iterator->next == NULL)
-	    break;
 	}
-      if (temp->g->before != NULL)
-	push(d->dependencies, temp->g);
+      if (temp->gn->before != NULL)
+	qpush(d->dependencies, temp->gn);
       else
-	push(d->no_dependencies, temp->g);
+	qpush(d->no_dependencies, temp->gn);
+
+      c->head = c->tail;
     }
   return d;
 }
 
-  /*
-  dependency_list* head = create_dependency_node();
-  dependency_list* temp = head;
-  dependency_list* d = head;
-  while (c != NULL)
+void execute_no_dependencies(queue* no_dependencies)
+{
+  while (!q_empty(no_dependencies))
     {
-      while (c->cursor != NULL)
+      pid_t pid = fork();
+      if (pid == 0)
 	{
-	  command_t cmd = c->cursor->command;
-	  process_command(cmd, d);
-	  c->cursor = c->cursor->next;
+	  graph_node* temp = qpop(no_dependencies);
+	  execute_command(temp->command, true);
+	  exit(1);
 	}
-      c = c->tail;
-
-      if (c != NULL)
-	{
-	  dependency_list* d = create_dependency_node();
-	  temp = d;
-	}
-
-      if (head->next == NULL)
-	head->next = temp;
       else
-	{
-	  temp->next = d;
-	  temp = temp->next;
-	}
+	i->pid = pid;
     }
-  return head;
-  */
 }
 
-// ========================= END OF PART C=========================
+void execute_dependencies(queue* dependencies)
+{
+  while(!q_empty(dependencies))
+    {
+      int status = 0, i;
+      graph_node* temp = qpop(dependencies);
+      for (i = 0; i < temp->count; i++)
+	  waitpid(temp->before[i]->pid, &status, 0);
+      pid_t pid = fork();
+      if (pid == 0)
+	{
+	  execute_command(temp->command, true);
+	  exit(1);
+	}
+      else
+	i->pid = pid;
+    }
+}
+      
+int execute_graph(dependency_graph* graph)
+{
+  execute_no_dependencies(graph->no_dependencies);
+  execute_dependencies(graph->dependencies);
+}
 
-
-
-
+// ========================= END OF PART C =========================
 
 int
 command_status (command_t c)
