@@ -289,7 +289,6 @@ dependency_graph* create_graph(command_stream_t c)
 
       c->head = c->tail;
     }
-  temp->next = NULL; // NOTE: ALSO MAYBE TAKE OUT
   return d;
 }
 

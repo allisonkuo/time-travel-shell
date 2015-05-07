@@ -959,6 +959,7 @@ make_command_stream (int (*get_next_byte) (void *),
 	}
       temp = temp->tail;           
     }
+  command_stream->tail = NULL;  // COULD BREAK EVERYTHING
 
   free(buffer);
   delete_all_token_streams(temp);
