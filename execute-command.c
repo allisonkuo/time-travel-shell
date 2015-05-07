@@ -360,6 +360,7 @@ void execute_simple (command_t c)
 
   int stdout = dup(1);
   int stdin = dup(0);
+  int status;
   if (c->output != NULL)
     {
       int fd = open(c->output, O_CREAT | O_TRUNC | O_WRONLY, 0644);
@@ -369,9 +370,24 @@ void execute_simple (command_t c)
       
       if (dup2(fd, 1) < 0)
 	error(1, 0, "Error in dup2.");
+
+      pid_t pid = fork();
+  
+      if (pid == 0)
+	{
+	  if (strcmp(a[0], exec) == 0)
+	    execvp(a[1], &a[1]);
+	  else
+	    execvp(a[0], a);
+	}
+      else
+	  waitpid(pid, &status, 0);
+      
+      close(fd);
+      
     }
 
-  if (c->input != NULL)
+  else if (c->input != NULL)
     {
       int fd = open(c->input, O_RDONLY, 0644);
 
@@ -380,26 +396,44 @@ void execute_simple (command_t c)
 
       if (dup2(fd, 0) < 0)
 	error(1, 0, "Error in dup2.");
-    }
 
-  pid_t pid = fork();
-  
-  if (pid == 0)
-    {
-      if (strcmp(a[0], exec) == 0)
-	execvp(a[1], &a[1]);
+      pid_t pid = fork();
+      
+      if (pid == 0)
+	{
+	  if (strcmp(a[0], exec) == 0)
+	    execvp(a[1], &a[1]);
+	  else
+	    execvp(a[0], a);
+	}
       else
-	execvp(a[0], a);
-    }
+	  waitpid(pid, &status, 0);
 
+      close(fd);
+
+    }
+  else
+    {
+      pid_t pid = fork();
+      
+      if (pid == 0)
+	{
+	  if (strcmp(a[0], exec) == 0)
+	    execvp(a[1], &a[1]);
+	  else
+	    execvp(a[0], a);
+	}
+      else
+	  waitpid(pid, &status, 0);
+    }
+  
   if (c->output != NULL)
     if (dup2(stdout, 1) < 0)
       error(1, 0, "Error in dup2.");
 
   if (c->input != NULL)
     if(dup2(stdin, 0) < 0)
-      error(1, 0, "Error in dup2.");
-    
+      error(1, 0, "Error in dup2.");  
   
 }
 

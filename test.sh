@@ -1,6 +1,6 @@
 #! /bin/sh
 
-echo lol > b.txt
+sort b.txt
 
 echo fuck > b.txt
 
