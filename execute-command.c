@@ -319,7 +319,7 @@ void execute_dependencies(queue* dependencies)
 {
   while(!q_empty(dependencies))
     {
-      int status = 0, i;
+      int status, i;
       graph_node* temp = q_pop(dependencies);
       for (i = 0; i < temp->count; i++)
 	  waitpid(temp->before[i]->pid, &status, 0);
