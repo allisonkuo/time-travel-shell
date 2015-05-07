@@ -43,12 +43,14 @@ struct graph_node {
 struct queue {
   graph_node* graphs[100];
   int num_items;
+  int push_spot;
   int current;
 };
 
 void q_push(queue *q, graph_node* g)
 {
-  q->graphs[q->num_items] = g;
+  q->graphs[q->push_spot] = g;
+  q->push_spot++;
   q->num_items++;
 }
 
@@ -123,7 +125,6 @@ building_list* create_building_list_node()
 
 void process_command(command_t c, building_list* d)
 {
-  d->next = NULL;
   // for each command,
   if (c->type == SIMPLE_COMMAND)
     {
@@ -131,33 +132,64 @@ void process_command(command_t c, building_list* d)
       d->read[d->read_count] = c->input;
       d->read_count++;
       int i;
-      for (i = 1; ; i++)
+      if (c->input != NULL)
 	{
-	  if (c->u.word[i] == NULL)
-	    break;
-	  if (c->u.word[i][0] == '-')
-	    continue;
-	  else
+	  for (i = 1; ; i++)
 	    {
-	      d->read[d->read_count] = c->u.word[i];
-	      d->read_count++;
-	      break;
+	      if (c->u.word[i] == NULL)
+		break;
+	      else if (c->u.word[i][0] == '-')
+		continue;
+	      else
+		{
+		  d->read = realloc(d->read, sizeof(d->read) * 8);
+		  if (d->read == NULL)
+		    {
+		      error(2, 0, "Error allocating memory.");
+		      return;
+		    }
+		  d->read[d->read_count] = c->u.word[i];
+		  d->read_count++;
+		  d->read[d->read_count] = NULL;
+		  break;
+		}
 	    }
 	}
 
       // store output into write list
       d->write[d->write_count] = c->output;
+      d->write = realloc(d->write, sizeof(d->read) * 8);
+      if (d->write == NULL)
+	{
+	  error(2, 0, "Error allocating memory.");
+	  return;
+	}
       d->write_count++;
+      d->write[d->write_count] = NULL;
     }
   else if (c-> type == SUBSHELL_COMMAND)
     {
       // store c->input into read list
       d->read[d->read_count] = c->input;
+      d->read = realloc(d->read, sizeof(d->read) * 8);
+      if (d->read == NULL)
+	{
+	  error(2, 0, "Error allocating memory.");
+	  return;
+	}
       d->read_count++;
+      d->read[d->read_count] = NULL;
 
       // store c->output into write list
       d->write[d->write_count] = c->output;
+      d->write = realloc(d->write, sizeof(d->read) * 8);
+      if (d->write == NULL)
+	{
+	  error(2, 0, "Error allocating memory.");
+	  return;
+	}
       d->write_count++;
+      d->write[d->write_count] = NULL;
 
       // process actual commands within the subshell
       process_command(c->u.subshell_command, d);
@@ -176,19 +208,19 @@ bool check_dependency(building_list* b1, building_list* b2)
   // if b1's read and b2's write intersects (WAR)
   for (i = 0; i < b1->read_count; i++)
     for (j = 0; j < b2->write_count; j++)
-      if (strcmp(b1->read[i], b2->write[j]))
+      if (b1->read[i] != NULL && b2->write[j] != NULL &&  strcmp(b1->read[i], b2->write[j]))
 	return true;
   
   // if b1's write and b2's read intersects (RAW)
   for (i = 0; i < b1->write_count; i++)
     for (j = 0; j < b2->read_count; j++)
-      if (strcmp(b1->write[i], b2->read[j]))
+      if (b1->write[i] != NULL && b2->read[j] != NULL &&  strcmp(b1->write[i], b2->read[j]))
 	return true;
   
   // if b1's write and b2's write intersects (WAW)
   for (i = 0; i < b1->write_count; i++)
     for (j = 0; j < b2->write_count; j++)
-      if (strcmp(b1->write[i], b2->write[j]))
+      if (b1->write[i] != NULL && b2->write[j] != NULL &&  strcmp(b1->write[i], b2->write[j]))
 	return true;
 
   return false;
@@ -200,6 +232,7 @@ void add_before(graph_node* g1, graph_node* g2)
   g1->before = realloc(g1->before, sizeof(graph_node));
   g1->before[g1->count] = g2;
   g1->count++;
+  g1->before[g1->count] = NULL;
 }
 
 
@@ -207,8 +240,18 @@ dependency_graph* create_graph(command_stream_t c)
 {
   // head = arbitrary dependency list node. ignore it.
   dependency_graph* d = malloc(sizeof(dependency_graph));
+
+  // initialize the dependency_graph queues
   d->dependencies = malloc(sizeof(queue));
+  d->dependencies->num_items = 0;
+  d->dependencies->push_spot = 0;
+  d->dependencies->current = 0;
+
   d->no_dependencies = malloc(sizeof(queue));
+  d->no_dependencies->num_items = 0;
+  d->no_dependencies->push_spot = 0;
+  d->dependencies->current = 0;
+  
   if (d == NULL || d->dependencies == NULL || d->no_dependencies == NULL)
     {
       error(2, 0, "Error in allocating memory.");
@@ -222,9 +265,10 @@ dependency_graph* create_graph(command_stream_t c)
   while (c->head != NULL)
     {
       // top of each command tree
-      temp->gn->command = c->head->command; 
       temp->next = create_building_list_node();
       temp = temp->next;
+      temp->gn->command = c->head->command;
+      temp->next = NULL;
 
       // should process the whole command tree
       process_command(c->head->command, temp); 
@@ -237,6 +281,7 @@ dependency_graph* create_graph(command_stream_t c)
 	    add_before(temp->gn, iterator->gn); 
 	  iterator = iterator->next;
 	}
+
       if (temp->gn->before != NULL)
 	q_push(d->dependencies, temp->gn);
       else
@@ -244,6 +289,7 @@ dependency_graph* create_graph(command_stream_t c)
 
       c->head = c->tail;
     }
+  temp->next = NULL; // NOTE: ALSO MAYBE TAKE OUT
   return d;
 }
 
@@ -481,7 +527,6 @@ void execute_subshell (command_t c)
 void
 execute_command (command_t c, bool time_travel)
 {
-  time_travel = true;
   switch (c->type)
     {
     case SIMPLE_COMMAND:
@@ -501,9 +546,15 @@ execute_command (command_t c, bool time_travel)
 	break;
     case SUBSHELL_COMMAND:
       	execute_subshell(c);
-	break;
-     
+	break;     
     }
+
+  // just to make the freaking warning go away
+  if (time_travel)
+    time_travel = true;
+   
+
+
   /* FIXME: Replace this with your implementation.  You may need to
      add auxiliary functions and otherwise modify the source code.
      You can also use external functions defined in the GNU C Library.  */
