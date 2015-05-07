@@ -361,6 +361,9 @@ void execute_simple (command_t c)
   int stdout = dup(1);
   int stdin = dup(0);
   int status;
+  pid_t pid = fork();
+  
+
   if (c->output != NULL)
     {
       int fd = open(c->output, O_CREAT | O_TRUNC | O_WRONLY, 0644);
@@ -371,8 +374,6 @@ void execute_simple (command_t c)
       if (dup2(fd, 1) < 0)
 	error(1, 0, "Error in dup2.");
 
-      pid_t pid = fork();
-  
       if (pid == 0)
 	{
 	  if (strcmp(a[0], exec) == 0)
@@ -397,8 +398,6 @@ void execute_simple (command_t c)
       if (dup2(fd, 0) < 0)
 	error(1, 0, "Error in dup2.");
 
-      pid_t pid = fork();
-      
       if (pid == 0)
 	{
 	  if (strcmp(a[0], exec) == 0)
@@ -414,8 +413,6 @@ void execute_simple (command_t c)
     }
   else
     {
-      pid_t pid = fork();
-      
       if (pid == 0)
 	{
 	  if (strcmp(a[0], exec) == 0)
