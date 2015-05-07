@@ -2,7 +2,7 @@
 
 sort b.txt
 
-echo fuck > b.txt
+echo FUCK YOU
 
 
 
