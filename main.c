@@ -63,7 +63,6 @@ main (int argc, char **argv)
     }
   else
     {
-  
       while ((command = read_command_stream (command_stream)))
 	{
 	  if (print_tree)

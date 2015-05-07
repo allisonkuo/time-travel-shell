@@ -372,12 +372,17 @@ void execute_simple (command_t c)
       if (dup2(fd, 0) < 0)
 	error(1, 0, "Error in dup2.");
     }
-  
-  if (strcmp(a[0], exec) == 0)
-    execvp(a[1], &a[1]);
-  else
-    execvp(a[0], a);
 
+  pid_t pid = fork();
+  
+  if (pid == 0)
+    {
+      if (strcmp(a[0], exec) == 0)
+	execvp(a[1], &a[1]);
+      else
+	execvp(a[0], a);
+    }
+  
 }
 
 void execute_and (command_t c)
@@ -461,7 +466,7 @@ void execute_pipe (command_t c)
       if (dup2(fd[0], 0) < 0)
 	error(1, 0, "Error in dup2");
 
-      execute_command(c->u.command[1], true);
+      execute_command(c->u.command[1], false);
       _exit(c->u.command[1]->status);
     }
   else
@@ -477,7 +482,7 @@ void execute_pipe (command_t c)
 	  if (dup2(fd[1], 1) < 0)
 	    error(1, 0, "Error in dup2");
 
-	  execute_command(c->u.command[0], true);
+	  execute_command(c->u.command[0], false);
 	  _exit(c->u.command[0]->status);
 	}
     }

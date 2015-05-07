@@ -1,6 +1,5 @@
-#!/bin/sh
+#! /bin/sh
 
-echo a && sort big.txt
+echo a
 
-echo b 
-
+echo b
