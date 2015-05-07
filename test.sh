@@ -1,8 +1,8 @@
 #! /bin/sh
 
-sort b.txt > a.txt
+echo lol > b.txt
 
-echo hello
+echo fuck > b.txt
 
 
 
