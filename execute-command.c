@@ -358,6 +358,8 @@ void execute_simple (command_t c)
   char **a = c->u.word;
   const char* exec = "exec";
 
+  int stdout = dup(1);
+  int stdin = dup(0);
   if (c->output != NULL)
     {
       int fd = open(c->output, O_CREAT | O_TRUNC | O_WRONLY, 0644);
@@ -389,6 +391,15 @@ void execute_simple (command_t c)
       else
 	execvp(a[0], a);
     }
+
+  if (c->output != NULL)
+    if (dup2(stdout, 1) < 0)
+      error(1, 0, "Error in dup2.");
+
+  if (c->input != NULL)
+    if(dup2(stdin, 0) < 0)
+      error(1, 0, "Error in dup2.");
+    
   
 }
 
@@ -564,11 +575,8 @@ execute_command (command_t c, bool time_travel)
   if (time_travel)
     time_travel = true;
    
-
-
   /* FIXME: Replace this with your implementation.  You may need to
      add auxiliary functions and otherwise modify the source code.
      You can also use external functions defined in the GNU C Library.  */
   //error (1, 0, "command execution not yet implemented");
 }
-
