@@ -1,8 +1,7 @@
 #! /bin/sh
 
-sort b.txt
+echo a || echo b || echo c || echo d  || echo e || echo f
 
 echo FUCK YOU
-
 
 
