@@ -1,5 +1,10 @@
 #! /bin/sh
 
-echo a
+echo fuck > b.txt
 
-echo b
+cat b.txt
+
+
+
+
+

@@ -129,68 +129,73 @@ void process_command(command_t c, building_list* d)
   if (c->type == SIMPLE_COMMAND)
     {
       // store c->input, c->u.word[1] into read list(filter for options)
-      d->read[d->read_count] = c->input;
-      d->read_count++;
-      int i;
       if (c->input != NULL)
 	{
-	  for (i = 1; ; i++)
+	  d->read[d->read_count] = c->input;
+	  d->read_count++;
+	}
+      int i;
+      for (i = 1; ; i++)
+	{
+	  if (c->u.word[i] == NULL)
+	    break;
+	  else if (c->u.word[i][0] == '-')
+	    continue;
+	  else
 	    {
-	      if (c->u.word[i] == NULL)
-		break;
-	      else if (c->u.word[i][0] == '-')
-		continue;
-	      else
+	      d->read = realloc(d->read, sizeof(d->read) * 8);
+	      if (d->read == NULL)
 		{
-		  d->read = realloc(d->read, sizeof(d->read) * 8);
-		  if (d->read == NULL)
-		    {
-		      error(2, 0, "Error allocating memory.");
-		      return;
-		    }
-		  d->read[d->read_count] = c->u.word[i];
-		  d->read_count++;
-		  d->read[d->read_count] = NULL;
-		  break;
+		  error(2, 0, "Error allocating memory.");
+		  return;
 		}
+	      d->read[d->read_count] = c->u.word[i];
+	      d->read_count++;
+	      break;
 	    }
 	}
-
+      
       // store output into write list
-      d->write[d->write_count] = c->output;
-      d->write = realloc(d->write, sizeof(d->read) * 8);
-      if (d->write == NULL)
+      if (c->output != NULL)
 	{
-	  error(2, 0, "Error allocating memory.");
-	  return;
+	  d->write[d->write_count] = c->output;
+	  d->write = realloc(d->write, sizeof(d->read) * 8);
+	  if (d->write == NULL)
+	    {
+	      error(2, 0, "Error allocating memory.");
+	      return;
+	    }
+	  d->write_count++;
 	}
-      d->write_count++;
-      d->write[d->write_count] = NULL;
     }
   else if (c-> type == SUBSHELL_COMMAND)
     {
       // store c->input into read list
-      d->read[d->read_count] = c->input;
-      d->read = realloc(d->read, sizeof(d->read) * 8);
-      if (d->read == NULL)
+      if (c->input != NULL)
 	{
-	  error(2, 0, "Error allocating memory.");
-	  return;
+	  d->read[d->read_count] = c->input;
+	  d->read = realloc(d->read, sizeof(d->read) * 8);
+	  if (d->read == NULL)
+	    {
+	      error(2, 0, "Error allocating memory.");
+	      return;
+	    }
+	  d->read_count++;
 	}
-      d->read_count++;
-      d->read[d->read_count] = NULL;
-
+      
       // store c->output into write list
-      d->write[d->write_count] = c->output;
-      d->write = realloc(d->write, sizeof(d->read) * 8);
-      if (d->write == NULL)
+      if (c->output != NULL)
 	{
-	  error(2, 0, "Error allocating memory.");
-	  return;
+	  d->write[d->write_count] = c->output;
+	  d->write = realloc(d->write, sizeof(d->read) * 8);
+	  if (d->write == NULL)
+	    {
+	      error(2, 0, "Error allocating memory.");
+	      return;
+	    }
+	  d->write_count++;
 	}
-      d->write_count++;
-      d->write[d->write_count] = NULL;
-
+      
       // process actual commands within the subshell
       process_command(c->u.subshell_command, d);
     }
