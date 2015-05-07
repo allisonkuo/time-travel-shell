@@ -213,19 +213,19 @@ bool check_dependency(building_list* b1, building_list* b2)
   // if b1's read and b2's write intersects (WAR)
   for (i = 0; i < b1->read_count; i++)
     for (j = 0; j < b2->write_count; j++)
-      if (b1->read[i] != NULL && b2->write[j] != NULL &&  strcmp(b1->read[i], b2->write[j]))
+      if (b1->read[i] != NULL && b2->write[j] != NULL &&  strcmp(b1->read[i], b2->write[j]) == 0)
 	return true;
   
   // if b1's write and b2's read intersects (RAW)
   for (i = 0; i < b1->write_count; i++)
     for (j = 0; j < b2->read_count; j++)
-      if (b1->write[i] != NULL && b2->read[j] != NULL &&  strcmp(b1->write[i], b2->read[j]))
+      if (b1->write[i] != NULL && b2->read[j] != NULL &&  strcmp(b1->write[i], b2->read[j]) == 0)
 	return true;
   
   // if b1's write and b2's write intersects (WAW)
   for (i = 0; i < b1->write_count; i++)
     for (j = 0; j < b2->write_count; j++)
-      if (b1->write[i] != NULL && b2->write[j] != NULL &&  strcmp(b1->write[i], b2->write[j]))
+      if (b1->write[i] != NULL && b2->write[j] != NULL &&  strcmp(b1->write[i], b2->write[j]) == 0)
 	return true;
 
   return false;

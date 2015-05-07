@@ -1,10 +1,7 @@
 #! /bin/sh
 
-echo fuck > b.txt
-
 cat b.txt
 
+sort b.txt > a.txt
 
-
-
-
+echo a > b.txt
