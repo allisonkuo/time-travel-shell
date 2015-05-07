@@ -46,27 +46,27 @@ struct queue {
   int current;
 };
 
-void qpush(queue *q, graph_node* g)
+void q_push(queue *q, graph_node* g)
 {
   q->graphs[q->num_items] = g;
   q->num_items++;
 }
 
-graph_node* qpop(queue *q)
+graph_node* q_pop(queue *q)
 {
   if(q->num_items == 0)
     return NULL;
   else
     {
       q->current++;
-      g->num_items--;
+      q->num_items--;
       return q->graphs[q->current - 1];
     }
 }
 
-bool qempty(queue *q)
+bool q_empty(queue *q)
 {
-  if (num_items == 0)
+  if (q->num_items == 0)
     return true;
   else
     return false;
@@ -103,13 +103,14 @@ building_list* create_building_list_node()
   d->gn = malloc(sizeof(graph_node));
   d->gn->before = NULL;
   d->gn->count = 0;
+  d->gn->pid = -1;
   d->read = malloc(sizeof(read));
   d->write = malloc(sizeof(write));
   if (d->read == NULL || d->write == NULL || d == NULL || d->gn == NULL)
   {
       error(2, 0, "Error in allocating new memory.");
       return NULL;
-    }
+  }
 
   d->next = NULL;
   d->read_count = 0;
@@ -122,25 +123,49 @@ building_list* create_building_list_node()
 
 void process_command(command_t c, building_list* d)
 {
+  d->next = NULL;
   // for each command,
   if (c->type == SIMPLE_COMMAND)
     {
       // store c->input, c->u.word[1] into read list(filter for options)
+      d->read[d->read_count] = c->input;
+      d->read_count++;
+      int i;
+      for (i = 1; ; i++)
+	{
+	  if (c->u.word[i] == NULL)
+	    break;
+	  if (c->u.word[i][0] == '-')
+	    continue;
+	  else
+	    {
+	      d->read[d->read_count] = c->u.word[i];
+	      d->read_count++;
+	      break;
+	    }
+	}
+
       // store output into write list
-      return;
+      d->write[d->write_count] = c->output;
+      d->write_count++;
     }
   else if (c-> type == SUBSHELL_COMMAND)
     {
       // store c->input into read list
+      d->read[d->read_count] = c->input;
+      d->read_count++;
+
       // store c->output into write list
-      //process_command(c->u.subshell_command);
-      return;
+      d->write[d->write_count] = c->output;
+      d->write_count++;
+
+      // process actual commands within the subshell
+      process_command(c->u.subshell_command, d);
     }
   else
     {
-      //process_command(c->u.command[0]);
-      //process_command(c->u.command[1]);
-      return;
+      process_command(c->u.command[0], d);
+      process_command(c->u.command[1], d);
     }
 }
 
@@ -174,7 +199,7 @@ void add_before(graph_node* g1, graph_node* g2)
   // CHECK LOL
   g1->before = realloc(g1->before, sizeof(graph_node));
   g1->before[g1->count] = g2;
-  count++;
+  g1->count++;
 }
 
 
@@ -204,7 +229,7 @@ dependency_graph* create_graph(command_stream_t c)
       // should process the whole command tree
       process_command(c->head->command, temp); 
 
-      building_list* iterator = head;
+      building_list* iterator = head->next;
       while (iterator->next != NULL)
 	{
 	  // check if there are any read/write dependencies. if so, add to read/write list
@@ -213,9 +238,9 @@ dependency_graph* create_graph(command_stream_t c)
 	  iterator = iterator->next;
 	}
       if (temp->gn->before != NULL)
-	qpush(d->dependencies, temp->gn);
+	q_push(d->dependencies, temp->gn);
       else
-	qpush(d->no_dependencies, temp->gn);
+	q_push(d->no_dependencies, temp->gn);
 
       c->head = c->tail;
     }
@@ -226,15 +251,15 @@ void execute_no_dependencies(queue* no_dependencies)
 {
   while (!q_empty(no_dependencies))
     {
+      graph_node* temp = q_pop(no_dependencies);
       pid_t pid = fork();
       if (pid == 0)
 	{
-	  graph_node* temp = qpop(no_dependencies);
 	  execute_command(temp->command, true);
 	  exit(1);
 	}
       else
-	i->pid = pid;
+	temp->pid = pid;
     }
 }
 
@@ -243,7 +268,7 @@ void execute_dependencies(queue* dependencies)
   while(!q_empty(dependencies))
     {
       int status = 0, i;
-      graph_node* temp = qpop(dependencies);
+      graph_node* temp = q_pop(dependencies);
       for (i = 0; i < temp->count; i++)
 	  waitpid(temp->before[i]->pid, &status, 0);
       pid_t pid = fork();
@@ -253,7 +278,7 @@ void execute_dependencies(queue* dependencies)
 	  exit(1);
 	}
       else
-	i->pid = pid;
+	temp->pid = pid;
     }
 }
       
@@ -261,6 +286,9 @@ int execute_graph(dependency_graph* graph)
 {
   execute_no_dependencies(graph->no_dependencies);
   execute_dependencies(graph->dependencies);
+
+  // don't care what main returns, so just return something.
+  return 1;
 }
 
 // ========================= END OF PART C =========================
@@ -453,6 +481,7 @@ void execute_subshell (command_t c)
 void
 execute_command (command_t c, bool time_travel)
 {
+  time_travel = true;
   switch (c->type)
     {
     case SIMPLE_COMMAND:

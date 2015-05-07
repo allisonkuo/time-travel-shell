@@ -25,3 +25,9 @@ void execute_command (command_t, bool);
 /* Return the exit status of a command, which must have previously
    been executed.  Wait for the command, if it is not already finished.  */
 int command_status (command_t);
+
+/* Create a "dependency graph" to deal with multithreading.  */
+dependency_graph* create_graph(command_stream_t c);
+
+/* Execute command based on the dependencies.  */
+int execute_graph(dependency_graph* graph);
