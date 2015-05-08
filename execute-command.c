@@ -130,19 +130,8 @@ void process_command(command_t c, building_list* d)
   // for each command,
   if (c->type == SIMPLE_COMMAND)
     {
-      // store c->input, c->u.word[1] into read list(filter for options)
       if (c->input != NULL)
 	{
-	  /*	  if (d->read_count == 0)
-	    {
-	      d->read = malloc(sizeof(char *) * 100); //TODO: realloc?
-	    }
-	  d->read[d->read_count] = malloc(sizeof(char)*1000);
-	  if (d->read == NULL || d->read[d->read_count] == NULL)
-	    {
-	      error(2, 0, "2.Error in allocating memory.");
-	      return;
-	      }*/
 	  d->read[d->read_count] = c->input;
 	  d->read_count++;
 	}
@@ -154,17 +143,7 @@ void process_command(command_t c, building_list* d)
 	  else if (c->u.word[i][0] == '-')
 	    continue;
 	  else
-	    {/*
-	      if (d->read_count == 0)
-		{
-		  d->read = malloc(sizeof(char *) * 100); //TODO: realloc?
-		}
-	      d->read[d->read_count] = malloc(sizeof(char)*1000);
-	      if (d->read[d->read_count] ==  NULL)
-		{
-		  error(2, 0, "3.Error in allocating memory.");
-		  return;
-		  }*/
+	    {
 	      d->read[d->read_count] = c->u.word[i];
 	      d->read_count++;
 	      break;
@@ -174,17 +153,6 @@ void process_command(command_t c, building_list* d)
       // store output into write list
       if (c->output != NULL)
 	{
-	  /*	  if (d->write_count == 0)
-	    {
-	      d->read = malloc(sizeof(char *) * 100); //TODO: realloc?
-	    }
-	  d->write[d->write_count] = malloc(sizeof(char)*1000);
-	  if (d->write == NULL)
-	    {
-	      error(2, 0, "Error allocating memory.");
-	      return;
-	    }
-	  */
 	  d->write[d->write_count] = c->output;
 	  d->write_count++;
 	}
@@ -199,11 +167,6 @@ void process_command(command_t c, building_list* d)
 	      error(2, 0, "Error allocating memory.");
 	      return;
 	    }
-	  /*	  if (d->read_count == 0)
-	    {
-	      d->read = malloc(sizeof(char *) * 100); //TODO: realloc?
-	    }
-	    d->read[d->read_count] = malloc(sizeof(char)*1000);*/
 	  d->read[d->read_count] = c->input;
 	  d->read_count++;
 	}
@@ -211,17 +174,6 @@ void process_command(command_t c, building_list* d)
       // store c->output into write list
       if (c->output != NULL)
 	{
-	  /*	  if (d->write_count == 0)
-	    {
-	      d->write = malloc(sizeof(char *) * 100); //TODO: realloc?
-	    }
-	  d->write[d->write_count] = malloc(sizeof(char)*1000);
-	  if (d->write == NULL)
-	    {
-	      error(2, 0, "Error allocating memory.");
-	      return;
-	    }
-	  */
 	  d->write[d->write_count] = c->output;
 	  d->write_count++;
 	}
@@ -263,10 +215,9 @@ bool check_dependency(building_list* b1, building_list* b2)
 
 void add_before(graph_node* g1, graph_node* g2)
 {
-  // CHECK LOL
   if (g1->before == NULL)
     {
-      g1->before = malloc(sizeof(graph_node *) * 100); //TODO: realloc?
+      g1->before = malloc(sizeof(graph_node *) * 100); 
     }
   g1->before[g1->count] = g2;
   g1->count++;
