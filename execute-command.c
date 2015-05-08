@@ -442,6 +442,7 @@ void execute_and (command_t c)
   if (p == 0)
     {
       execute_command(c->u.command[0], true);
+      c->status = c->u.command[0]->status;
       _exit(c->u.command[0]->status);
     }
   else
@@ -454,7 +455,9 @@ void execute_and (command_t c)
       if (c->status == 0)
 	{
 	  execute_command(c->u.command[1], true);
-	  _exit(c->u.command[1]->status);
+	  c->status = c->u.command[1]->status;
+	  //_exit(c->u.command[1]->status);
+	  
 	}
     }
 }
@@ -465,7 +468,8 @@ void execute_or (command_t c)
   if (p == 0)
     {
       execute_command(c->u.command[0], true);
-      _exit(c->u.command[0]->status);
+      //_exit(c->u.command[0]->status);
+      c->status = c->u.command[0]->status;
     }
   else
     {
@@ -477,7 +481,8 @@ void execute_or (command_t c)
       if (c->status != 0)
 	{
 	  execute_command(c->u.command[1], true);
-	  _exit(c->u.command[1]->status);
+	  //_exit(c->u.command[1]->status);
+	  c->status = c->u.command[1]->status;
 	}
     }
 }
@@ -552,8 +557,10 @@ void execute_pipe (command_t c)
   c->status = WEXITSTATUS(status);
 }
 
-void execute_subshell (command_t c)
+void execute_subshell (command_t c )
 {
+  int stdout = dup(1);
+  int stdin = dup(0);
   if (c->output != NULL)
     {
       int fd = open(c->output, O_CREAT | O_TRUNC | O_WRONLY, 0644);
@@ -565,18 +572,30 @@ void execute_subshell (command_t c)
 	error(1, 0, "Error in dup2.");
     }
 
-    if (c->input != NULL)
+  if (c->input != NULL)
     {
       int fd = open(c->input, O_RDONLY, 0644);
-
+      
       if (fd < 0)
 	error(1, 0, "Error opening file.");
-
+      
       if (dup2(fd, 0) < 0)
 	error(1, 0, "Error in dup2.");
     }
-    
+  
   execute_command(c->u.subshell_command, true);
+  c->status = c->u.subshell_command->status;
+  
+   if (c->output != NULL)
+    if (dup2(stdout, 1) < 0)
+      error(1, 0, "Error in dup2.");
+
+  if (c->input != NULL)
+    if(dup2(stdin, 0) < 0)
+      error(1, 0, "Error in dup2.");
+
+  
+
 }
 
 void
