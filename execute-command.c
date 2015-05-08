@@ -110,7 +110,7 @@ building_list* create_building_list_node()
   d->write = malloc(sizeof(write));
   if (d->read == NULL || d->write == NULL || d == NULL || d->gn == NULL)
   {
-      error(2, 0, "Error in allocating new memory.");
+      error(2, 0, "1.Error in allocating new memory.");
       return NULL;
   }
 
@@ -131,6 +131,12 @@ void process_command(command_t c, building_list* d)
       // store c->input, c->u.word[1] into read list(filter for options)
       if (c->input != NULL)
 	{
+	  d->read[d->read_count] = malloc(sizeof(c->input));
+	  if (d->read[d->read_count] == NULL)
+	    {
+	      error(2, 0, "2.Error in allocating memory.");
+	      return;
+	    }
 	  d->read[d->read_count] = c->input;
 	  d->read_count++;
 	}
@@ -143,10 +149,10 @@ void process_command(command_t c, building_list* d)
 	    continue;
 	  else
 	    {
-	      d->read = realloc(d->read, sizeof(d->read) * 8);
-	      if (d->read == NULL)
+	      d->read[d->read_count] = malloc(sizeof(c->u.word[i]));
+	      if (d->read[d->read_count] ==  NULL)
 		{
-		  error(2, 0, "Error allocating memory.");
+		  error(2, 0, "3.Error in allocating memory.");
 		  return;
 		}
 	      d->read[d->read_count] = c->u.word[i];
@@ -158,13 +164,14 @@ void process_command(command_t c, building_list* d)
       // store output into write list
       if (c->output != NULL)
 	{
-	  d->write[d->write_count] = c->output;
-	  d->write = realloc(d->write, sizeof(d->read) * 8);
+	  d->write[d->write_count] = malloc(sizeof(c->output));
 	  if (d->write == NULL)
 	    {
 	      error(2, 0, "Error allocating memory.");
 	      return;
 	    }
+
+	  d->write[d->write_count] = c->output;
 	  d->write_count++;
 	}
     }
@@ -173,26 +180,26 @@ void process_command(command_t c, building_list* d)
       // store c->input into read list
       if (c->input != NULL)
 	{
-	  d->read[d->read_count] = c->input;
-	  d->read = realloc(d->read, sizeof(d->read) * 8);
 	  if (d->read == NULL)
 	    {
 	      error(2, 0, "Error allocating memory.");
 	      return;
 	    }
+	  d->read[d->read_count] = c->input;
 	  d->read_count++;
 	}
       
       // store c->output into write list
       if (c->output != NULL)
 	{
-	  d->write[d->write_count] = c->output;
-	  d->write = realloc(d->write, sizeof(d->read) * 8);
+	  d->write[d->write_count] = malloc(sizeof(c->output));
 	  if (d->write == NULL)
 	    {
 	      error(2, 0, "Error allocating memory.");
 	      return;
 	    }
+	  
+	  d->write[d->write_count] = c->output;
 	  d->write_count++;
 	}
       
@@ -234,7 +241,8 @@ bool check_dependency(building_list* b1, building_list* b2)
 void add_before(graph_node* g1, graph_node* g2)
 {
   // CHECK LOL
-  g1->before = realloc(g1->before, sizeof(graph_node));
+  g1->before[g1->count] = malloc(sizeof(g2));
+  //  g1->before = realloc(g1->before, sizeof(graph_node));
   g1->before[g1->count] = g2;
   g1->count++;
   g1->before[g1->count] = NULL;
@@ -259,7 +267,7 @@ dependency_graph* create_graph(command_stream_t c)
   
   if (d == NULL || d->dependencies == NULL || d->no_dependencies == NULL)
     {
-      error(2, 0, "Error in allocating memory.");
+      error(2, 0, "4.Error in allocating memory.");
       return NULL;
     }
   
@@ -468,8 +476,9 @@ void execute_or (command_t c)
   if (p == 0)
     {
       execute_command(c->u.command[0], true);
-      //_exit(c->u.command[0]->status);
       c->status = c->u.command[0]->status;
+      _exit(c->u.command[0]->status);
+      
     }
   else
     {
@@ -481,8 +490,8 @@ void execute_or (command_t c)
       if (c->status != 0)
 	{
 	  execute_command(c->u.command[1], true);
-	  //_exit(c->u.command[1]->status);
 	  c->status = c->u.command[1]->status;
+	  //_exit(c->u.command[1]->status);
 	}
     }
 }
